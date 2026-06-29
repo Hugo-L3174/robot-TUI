@@ -10,7 +10,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-# --- Fetch FTXUI --------------------------------------------------------------
 include(FetchContent)
 
 set(FETCHCONTENT_UPDATES_DISCONNECTED ON)
@@ -24,7 +23,16 @@ FetchContent_Declare(ftxui
   EXCLUDE_FROM_ALL
 )
 FetchContent_MakeAvailable(ftxui)
-# ------------------------------------------------------------------------------
+
+FetchContent_Declare(
+  fmt
+  GIT_REPOSITORY https://github.com/fmtlib/fmt.git
+  GIT_TAG        12.2.0
+  GIT_PROGRESS   TRUE
+  GIT_SHALLOW    TRUE
+  EXCLUDE_FROM_ALL
+)
+FetchContent_MakeAvailable(fmt)
 
 add_executable(servo-interface src/main.cpp)
 target_include_directories(servo-interface PRIVATE src)
@@ -33,5 +41,6 @@ target_link_libraries(servo-interface
   PRIVATE ftxui::screen
   PRIVATE ftxui::dom
   PRIVATE ftxui::component
+  PRIVATE fmt::fmt
   # or just PRIVATE ftxui::ftxui ?
 )
