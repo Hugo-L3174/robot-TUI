@@ -106,7 +106,7 @@ struct Interface
 
 int main()
 {
-  auto screen = ScreenInteractive::Fullscreen();
+  auto screen = App::Fullscreen();
 
   Interface interface;
 
@@ -129,24 +129,24 @@ int main()
 
   auto serial_dropdown = Dropdown(&interface.serial_ports, &interface.serial_selected);
 
-  auto open_button = Button("Open",
-                            [&]
-                            {
-                              bool success = false;
+  auto connect_button = Button("Connect",
+                               [&]
+                               {
+                                 bool success = false;
 
-                              if(interface_index == 0)
-                              {
-                                interface.connection_type = ConnectionType::UDP;
-                                success = OpenUDP(std::stoi(interface.udp_port));
-                              }
-                              else
-                              {
-                                interface.connection_type = ConnectionType::Serial;
-                                success = OpenSerial(interface.serial_ports[interface.serial_selected]);
-                              }
+                                 if(interface_index == 0)
+                                 {
+                                   interface.connection_type = ConnectionType::UDP;
+                                   success = OpenUDP(std::stoi(interface.udp_port));
+                                 }
+                                 else
+                                 {
+                                   interface.connection_type = ConnectionType::Serial;
+                                   success = OpenSerial(interface.serial_ports[interface.serial_selected]);
+                                 }
 
-                              interface.connected = success;
-                            });
+                                 interface.connected = success;
+                               });
 
   auto disconnect_button = Button("Disconnect",
                                   [&]
@@ -164,7 +164,7 @@ int main()
 
                                 auto ids = SearchServos();
 
-                                for(int id : ids)
+                                for(const auto & id : ids)
                                 {
                                   interface.servos.push_back(ReadServoInfo(id));
                                 }
@@ -210,7 +210,7 @@ int main()
                 text("Port: "),
                 udp_port->Render() | flex,
                 separator(),
-                open_button->Render(),
+                connect_button->Render() | flex,
             });
           }
           else
@@ -219,11 +219,11 @@ int main()
                 text("Device: "),
                 serial_dropdown->Render() | flex,
                 separator(),
-                open_button->Render(),
+                connect_button->Render() | flex,
             });
           }
 
-          return window(text("Connection"), vbox({
+          return window(text("Connection"), hbox({
                                                 interface_selector->Render(),
                                                 separator(),
                                                 config,
@@ -233,13 +233,22 @@ int main()
         std::string status;
 
         if(interface.connection_type == ConnectionType::UDP)
-          status = "UDP : " + interface.udp_port;
+        {
+          status = "UDP via port : " + interface.udp_port;
+        }
         else
+        {
           status = interface.serial_ports[interface.serial_selected];
+        }
 
         return window(text("Connection"), hbox({
-                                              text("Connected : " + status) | flex,
-                                              disconnect_button->Render(),
+                                              vbox({
+                                                  text("Connected : " + status),
+                                                  separator(),
+                                                  disconnect_button->Render() | flex,
+                                              }),
+                                              separator(),
+                                              search_button->Render() | flex,
                                           }));
       });
 
@@ -276,20 +285,15 @@ int main()
           // clang-format on
         }
 
-        auto table = Table(tableRows);
+        auto servoInfoTable = Table(tableRows);
 
         // Make first row bold with a double border.
-        table.SelectRow(0).Decorate(bold);
-        table.SelectRow(0).SeparatorVertical(LIGHT);
-        table.SelectRow(0).Border(DOUBLE);
+        servoInfoTable.SelectRow(0).Decorate(bold);
+        servoInfoTable.SelectRow(0).Decorate(hcenter);
+        servoInfoTable.SelectRow(0).SeparatorVertical(LIGHT);
+        servoInfoTable.SelectRow(0).Border(DOUBLE);
 
-        auto tableElement = table.Render();
-
-        return window(text("Servos"), vbox({
-                                          search_button->Render(),
-                                          separator(),
-                                          vbox(std::move(tableElement)),
-                                      }));
+        return window(text("Servos"), servoInfoTable.Render() | flex);
       });
 
   /////////////////////////////////////////////////////////////////////////////
@@ -297,23 +301,24 @@ int main()
   /////////////////////////////////////////////////////////////////////////////
 
   auto container = Container::Vertical({
-      interface_selector,
-      udp_port,
-      serial_dropdown,
-      open_button,
-      disconnect_button,
-      search_button,
+      Container::Horizontal({
+          interface_selector,
+          udp_port,
+          serial_dropdown,
+          connect_button,
+          disconnect_button,
+          search_button,
+      }),
   });
 
   auto renderer = Renderer(container,
                            [&]
                            {
                              return vbox({
-                                        connection_panel->Render(),
-                                        separator(),
-                                        servo_panel->Render(),
-                                    })
-                                    | border;
+                                 connection_panel->Render(),
+                                 separator(),
+                                 servo_panel->Render(),
+                             });
                            });
 
   screen.Loop(renderer);
@@ -324,12 +329,10 @@ int main()
   return EXIT_SUCCESS;
 }
 
-/* @todo Add a layout with top block selecting port/serial interface opening
-same as in FT servos debug (selectable list among found available ?)
-Then clickable search button when port is open
-Every found servo should be added automatically with servo type + bus ID on left column then all infos on right columns
-
-Then since this is supposed to be running on the robot machine (now just same pc because no embedded computer)
+/* @todo
+Since this is supposed to be running on the robot machine (now just same pc because no embedded computer)
 this should run the udp server ig? to emulate same principle
 Maybe look at G1Control for a more recent example
+
+Check why arrow navigating seems to iterate over invisible elements?
 */
