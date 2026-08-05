@@ -10,6 +10,12 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+# Qt related
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTOUIC ON)
+
+find_package(Qt5 REQUIRED COMPONENTS SerialPort)
+
 include(FetchContent)
 
 set(FETCHCONTENT_UPDATES_DISCONNECTED ON)
@@ -34,13 +40,20 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(fmt)
 
-add_executable(servo-interface src/main.cpp)
-target_include_directories(servo-interface PRIVATE src)
+add_executable(servo-interface
+               src/main.cpp
+               servo/scscl.h
+               servo/scserial.cpp servo/scserial.h
+               servo/servo_types.h
+               servo/sms_sts.h)
+target_include_directories(servo-interface PRIVATE
+                           src
+                           servo)
 
-target_link_libraries(servo-interface
-  PRIVATE ftxui::screen
-  PRIVATE ftxui::dom
-  PRIVATE ftxui::component
-  PRIVATE fmt::fmt
-  # or just PRIVATE ftxui::ftxui ?
+target_link_libraries(servo-interface PRIVATE
+  ftxui::screen
+  ftxui::dom
+  ftxui::component
+  fmt::fmt
+  Qt::SerialPort
 )

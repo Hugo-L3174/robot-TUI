@@ -11,28 +11,31 @@
 #include <ftxui/dom/elements.hpp>
 #include <ftxui/dom/table.hpp>
 
+#include "../servo/scserial.h"
+#include <QSerialPortInfo>
+
 using namespace ftxui;
 
+feetech_servo::SMS_STS * sms_sts_serial_;
+
 ////////////////////////////////////////////////////////////////////////////////
-// Hardware interface (to implement)
+// Hardware interface
 ////////////////////////////////////////////////////////////////////////////////
 
 std::vector<std::string> DetectSerialPorts()
 {
-  return {
-      "/dev/ttyUSB0",
-      "/dev/ttyUSB1",
-  };
-}
-
-bool OpenUDP(int port)
-{
-  (void)port;
-  return true;
+  std::vector<std::string> portNames;
+  for(const auto & info : QSerialPortInfo::availablePorts())
+  {
+    portNames.push_back(info.portName().toStdString());
+  }
+  return portNames;
 }
 
 bool OpenSerial(const std::string & device)
 {
+  // @note The feetech servo SCSerial class takes the Qt servo as argument, so when the Qt does the general opening then
+  // the servo specific functions can be called directly
   (void)device;
   return true;
 }
@@ -81,7 +84,6 @@ ServoInfo ReadServoInfo(int id)
 
 enum class ConnectionType
 {
-  UDP,
   Serial,
 };
 
@@ -89,10 +91,7 @@ struct Interface
 {
   bool connected = false;
 
-  ConnectionType connection_type = ConnectionType::UDP;
-
-  // UDP
-  std::string udp_port = "14550";
+  ConnectionType connection_type = ConnectionType::Serial;
 
   // Serial
   std::vector<std::string> serial_ports = DetectSerialPorts();
@@ -119,13 +118,10 @@ int main()
   int interface_index = 0;
 
   std::vector<std::string> interface_names = {
-      "UDP",
       "Serial",
   };
 
   auto interface_selector = Radiobox(&interface_names, &interface_index);
-
-  auto udp_port = Input(&interface.udp_port, "Port");
 
   auto serial_dropdown = Dropdown(&interface.serial_ports, &interface.serial_selected);
 
@@ -136,13 +132,11 @@ int main()
 
                                  if(interface_index == 0)
                                  {
-                                   interface.connection_type = ConnectionType::UDP;
-                                   success = OpenUDP(std::stoi(interface.udp_port));
+                                   interface.connection_type = ConnectionType::Serial;
+                                   success = OpenSerial(interface.serial_ports[interface.serial_selected]);
                                  }
                                  else
                                  {
-                                   interface.connection_type = ConnectionType::Serial;
-                                   success = OpenSerial(interface.serial_ports[interface.serial_selected]);
                                  }
 
                                  interface.connected = success;
@@ -207,20 +201,14 @@ int main()
           if(interface_index == 0)
           {
             config = hbox({
-                text("Port: "),
-                udp_port->Render() | flex,
+                text("Device: "),
+                serial_dropdown->Render() | flex,
                 separator(),
                 connect_button->Render() | flex,
             });
           }
           else
           {
-            config = hbox({
-                text("Device: "),
-                serial_dropdown->Render() | flex,
-                separator(),
-                connect_button->Render() | flex,
-            });
           }
 
           return window(text("Connection"), hbox({
@@ -232,13 +220,12 @@ int main()
 
         std::string status;
 
-        if(interface.connection_type == ConnectionType::UDP)
+        if(interface.connection_type == ConnectionType::Serial)
         {
-          status = "UDP via port : " + interface.udp_port;
+          status = interface.serial_ports[interface.serial_selected];
         }
         else
         {
-          status = interface.serial_ports[interface.serial_selected];
         }
 
         return window(text("Connection"), hbox({
@@ -303,7 +290,6 @@ int main()
   auto container = Container::Vertical({
       Container::Horizontal({
           interface_selector,
-          udp_port,
           serial_dropdown,
           connect_button,
           disconnect_button,
