@@ -30,6 +30,16 @@ FetchContent_Declare(ftxui
 )
 FetchContent_MakeAvailable(ftxui)
 
+# easy enum conversion into strings
+FetchContent_Declare(magic_enum
+  GIT_REPOSITORY https://github.com/Neargye/magic_enum.git
+  GIT_TAG        v0.9.8
+  GIT_PROGRESS   TRUE
+  GIT_SHALLOW    TRUE
+  EXCLUDE_FROM_ALL
+)
+FetchContent_MakeAvailable(magic_enum)
+
 FetchContent_Declare(
   fmt
   GIT_REPOSITORY https://github.com/fmtlib/fmt.git
@@ -40,17 +50,23 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(fmt)
 
+add_library(GUI
+            src/GUI/terminal.cpp)
+target_include_directories(GUI PRIVATE
+                           include/GUI/
+                           include/interface/)
+target_link_libraries(GUI PRIVATE
+                      ftxui::screen
+                      ftxui::dom
+                      ftxui::component
+                      fmt::fmt
+                      magic_enum::magic_enum)
+
 add_executable(servo-interface
-               src/main.cpp
-               servo/scscl.h
-               servo/scserial.cpp servo/scserial.h
-               servo/servo_types.h
-               servo/sms_sts.h)
-target_include_directories(servo-interface PRIVATE
-                           src
-                           servo)
+               src/main.cpp)
 
 target_link_libraries(servo-interface PRIVATE
+  GUI
   ftxui::screen
   ftxui::dom
   ftxui::component
