@@ -70,14 +70,10 @@ target_link_libraries(GUI PUBLIC
                       fmt::fmt
                       magic_enum::magic_enum)
 
+
 add_executable(servo-interface
                src/main.cpp)
-
+target_include_directories(servo-interface PRIVATE
+                           include/GUI)
 target_link_libraries(servo-interface PRIVATE
-  GUI
-  ftxui::screen
-  ftxui::dom
-  ftxui::component
-  fmt::fmt
-  Qt::SerialPort
-)
+                      GUI)
