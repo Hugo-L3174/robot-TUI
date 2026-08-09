@@ -1,5 +1,6 @@
 #pragma once
 
+#include <map>
 #include <string>
 #include <vector>
 
@@ -33,14 +34,17 @@ public:
               controller& controller*/);
 
   // Should set connected_ var
-  bool connect(const std::string & device);
+  void connect(const std::string & device);
   // Should clear servos_ and set connected_ to false
   void disconnect();
 
   void startController();
   void stopController();
 
-  bool connected() const;
+  bool connected() const
+  {
+    return connected_;
+  }
   bool controllerRunning() const;
 
   void detectSerialPorts();
@@ -49,12 +53,12 @@ public:
     return serialPorts_;
   }
 
-  // Should fill servos list
   void detectServos();
-  const std::vector<ServoInfo> & getServos() const
+  const std::vector<int> & getServoIds() const
   {
-    return servos_;
+    return servoIds_;
   }
+  ServoInfo getServoData(int id);
 
   // @todo this is a single value now but might want to have a vector
   // and servos would be a map with the connection link or robot as key?
@@ -70,6 +74,6 @@ private:
   // May need to be more specific than just the names
   std::vector<std::string> serialPorts_;
 
-  // Servo list
-  std::vector<ServoInfo> servos_;
+  // Servo ids
+  std::vector<int> servoIds_;
 };

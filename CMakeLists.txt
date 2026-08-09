@@ -50,12 +50,20 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(fmt)
 
+add_library(Interface
+            src/interface/interface.cpp)
+target_include_directories(Interface PUBLIC
+                           include/interface/)
+target_link_libraries(Interface PRIVATE
+                      Qt::SerialPort)
+
+
 add_library(GUI
             src/GUI/terminal.cpp)
-target_include_directories(GUI PRIVATE
-                           include/GUI/
-                           include/interface/)
-target_link_libraries(GUI PRIVATE
+target_include_directories(GUI PUBLIC
+                           include/GUI/)
+target_link_libraries(GUI PUBLIC
+                      Interface
                       ftxui::screen
                       ftxui::dom
                       ftxui::component
