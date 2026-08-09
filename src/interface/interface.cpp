@@ -16,6 +16,7 @@ void Interface::connect(const std::string & device)
 void Interface::disconnect()
 {
   // call hardware close link
+  servoIds_.clear();
   connected_ = false;
 }
 

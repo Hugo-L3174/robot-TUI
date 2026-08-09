@@ -38,6 +38,7 @@ TerminalApp::TerminalApp(Interface & interface)
                              [&]
                              {
                                interface_.disconnect();
+                               servoMap_.clear();
                                // @todo should stop servo polling thread
                              });
 
