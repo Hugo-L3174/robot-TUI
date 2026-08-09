@@ -1,10 +1,9 @@
-#include <ftxui/component/component.hpp>
-#include <ftxui/component/component_base.hpp>
-#include <ftxui/component/screen_interactive.hpp>
-#include <ftxui/dom/elements.hpp>
-#include <ftxui/dom/table.hpp>
+#pragma once
 
-#include <magic_enum/magic_enum.hpp>
+#include <ftxui/component/component.hpp>
+#include <ftxui/component/screen_interactive.hpp>
+
+#include <thread>
 
 #include "interface.h"
 
@@ -13,19 +12,42 @@ class TerminalApp
 public:
   explicit TerminalApp(Interface & interface);
 
+  void startRendering();
+
 private:
+  // @fixme should probably be a ref or ptr
   Interface interface_;
+
+  // Main app object
+  ftxui::App screen_;
 
   // Menus
   ftxui::Component connectionSelector_;
   ftxui::Component addressSelector_;
+  // @todo add controller menu where path to a config can be passed (should be optional)
 
   // Buttons
   ftxui::Component connectButton_;
   ftxui::Component disconnectButton_;
   ftxui::Component searchButton_;
+  // @todo add controller start button that calls interface with passed config
+
+  // Servos updater thread to continuously poll connected servos
+  // std::thread servoUpdaterThread_;
+
+  // Panels
+  ftxui::Component connectionPanel_;
+  ftxui::Component servoPanel_;
+
+  ftxui::Component mainContainer_;
+  ftxui::Component mainRenderer_;
+
+  // Servos data buffer for display is owned by the frontend
+  std::map<int, ServoInfo> servoMap_;
 
   // User set params
   int interfaceIndex_;
   int selectedAddress_;
+
+  // @todo should I make constructor functions for each component instead of building it all in main constructor ?
 };
