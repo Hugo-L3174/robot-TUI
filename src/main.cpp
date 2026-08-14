@@ -14,32 +14,6 @@
 int main()
 {
 
-  /////////////////////////////////////////////////////////////////////////////
-  // Background update thread
-  /////////////////////////////////////////////////////////////////////////////
-
-  // std::thread updater(
-  //     [&]
-  //     {
-  //       while(running)
-  //       {
-  //         if(interface.connected)
-  //         {
-  //           for(auto & servo : interface.servos)
-  //           {
-  //             servo = ReadServoInfo(servo.id);
-  //           }
-
-  //           screen.PostEvent(Event::Custom);
-  //         }
-
-  //         std::this_thread::sleep_for(std::chrono::milliseconds(100));
-  //       }
-  //     });
-
-  // running = false;
-  // updater.join();
-
   auto interface = Interface();
   interface.detectSerialPorts();
   auto term = TerminalApp(interface);

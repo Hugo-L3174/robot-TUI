@@ -3,6 +3,7 @@
 #include <ftxui/component/component.hpp>
 #include <ftxui/component/screen_interactive.hpp>
 
+#include <mutex>
 #include <thread>
 
 #include "interface.h"
@@ -13,6 +14,9 @@ public:
   explicit TerminalApp(Interface & interface);
 
   void startRendering();
+
+  void startServoUpdateThread();
+  void stopServoUpdateThread();
 
 private:
   // @fixme should probably be a ref or ptr
@@ -32,9 +36,6 @@ private:
   ftxui::Component searchButton_;
   // @todo add controller start button that calls interface with passed config
 
-  // Servos updater thread to continuously poll connected servos
-  // std::thread servoUpdaterThread_;
-
   // Panels
   ftxui::Component connectionPanel_;
   ftxui::Component servoPanel_;
@@ -44,6 +45,9 @@ private:
 
   // Servos data buffer for display is owned by the frontend
   std::map<int, ServoInfo> servoMap_;
+  mutable std::mutex servoMapMutex_;
+
+  std::jthread servoDataUpdater_;
 
   // User set params
   int interfaceIndex_;

@@ -37,16 +37,16 @@ TerminalApp::TerminalApp(Interface & interface)
   disconnectButton_ = Button("Disconnect",
                              [&]
                              {
+                               stopServoUpdateThread();
                                interface_.disconnect();
                                servoMap_.clear();
-                               // @todo should stop servo polling thread
                              });
 
   // @todo should be greyed out or removed during control
   searchButton_ = Button("Search",
                          [&]
                          {
-                           // @todo should stop any existing thread
+                           stopServoUpdateThread();
                            interface_.detectServos();
                            // Resetting and refilling servo map
                            servoMap_.clear();
@@ -54,7 +54,7 @@ TerminalApp::TerminalApp(Interface & interface)
                            {
                              servoMap_.emplace(id, interface_.getServoData(id));
                            }
-                           // @todo should trigger start of polling thread
+                           startServoUpdateThread();
                          });
 
   connectionPanel_ = Renderer(
@@ -117,6 +117,7 @@ TerminalApp::TerminalApp(Interface & interface)
         // First row (categories)
         tableRows.push_back({"ID", "Voltage", "Current", "KP", "KI", "Position", "Torque"});
 
+        std::unique_lock<std::mutex> lock(servoMapMutex_);
         for(const auto & [id, servoData] : servoMap_)
         {
           // clang-format off
@@ -133,6 +134,7 @@ TerminalApp::TerminalApp(Interface & interface)
 					);
           // clang-format on
         }
+        lock.unlock();
 
         auto servoInfoTable = Table(tableRows);
 
@@ -164,9 +166,61 @@ TerminalApp::TerminalApp(Interface & interface)
                                  servoPanel_->Render(),
                              });
                            });
+
+  // mainRenderer_ = Renderer([&] {
+  //   return vbox({
+  //       hbox({
+  //           window(vbox({
+  //               connectionPanel_->Render(),
+  //           }), hflex),
+  //           separatorVertical(),
+  //           window(vbox({
+  //               servoPanel_->Render(),
+  //           }), hflex),
+  //       }),
+  //   });
+  // });
 }
 
 void TerminalApp::startRendering()
 {
   screen_.Loop(mainRenderer_);
+}
+
+void TerminalApp::startServoUpdateThread()
+{
+  if(servoDataUpdater_.joinable())
+  {
+    return;
+  }
+
+  servoDataUpdater_ = std::jthread(
+      [&](std::stop_token stopToken)
+      {
+        while(!stopToken.stop_requested())
+        {
+          std::unique_lock<std::mutex> lock(servoMapMutex_);
+          for(auto & [id, servoData] : servoMap_)
+          {
+            servoData = interface_.getServoData(id);
+          }
+          lock.unlock();
+
+          // Trigger ftxui re rendering
+          screen_.PostEvent(Event::Custom);
+
+          std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
+      });
+}
+
+void TerminalApp::stopServoUpdateThread()
+{
+  if(!servoDataUpdater_.joinable())
+  {
+    return;
+  }
+  // Set the jthread stop token
+  servoDataUpdater_.request_stop();
+  servoDataUpdater_.join();
 }
