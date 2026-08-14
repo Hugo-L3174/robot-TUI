@@ -1,5 +1,4 @@
-#ifndef SCSERIAL_H
-#define SCSERIAL_H
+#pragma once
 
 #include <QObject>
 #include <QSerialPort>
@@ -91,5 +90,3 @@ protected:
 
 #include "scscl.h"
 #include "sms_sts.h"
-
-#endif // SCSERIAL_H

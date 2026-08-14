@@ -5,11 +5,11 @@
 namespace feetech_servo
 {
 
-//-------EPROM(Read only)--------
+//-------EPROM(read-only)--------
 #define SCSCL_VERSION_L 3
 #define SCSCL_VERSION_H 4
 
-//-------EPROM(Read/write)--------
+//-------EPROM((read and write)---
 #define SCSCL_ID 5
 #define SCSCL_BAUD_RATE 6
 #define SCSCL_MIN_ANGLE_LIMIT_L 9
@@ -19,7 +19,7 @@ namespace feetech_servo
 #define SCSCL_CW_DEAD 26
 #define SCSCL_CCW_DEAD 27
 
-//-------SRAM(Read/write)--------
+//-------SRAM((read and write)---
 #define SCSCL_TORQUE_ENABLE 40
 #define SCSCL_GOAL_POSITION_L 42
 #define SCSCL_GOAL_POSITION_H 43
@@ -29,7 +29,7 @@ namespace feetech_servo
 #define SCSCL_GOAL_SPEED_H 47
 #define SCSCL_LOCK 48
 
-//-------SRAM(Read only)--------
+//-------SRAM(read-only)--------
 #define SCSCL_PRESENT_POSITION_L 56
 #define SCSCL_PRESENT_POSITION_H 57
 #define SCSCL_PRESENT_SPEED_L 58

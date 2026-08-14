@@ -1,5 +1,4 @@
-#ifndef SERVO_MEM_CONFIG_H
-#define SERVO_MEM_CONFIG_H
+#pragma once
 
 #include <QString>
 #include <map>
@@ -217,5 +216,3 @@ const std::vector<MemoryConfig> SCSMemConfig = {
 };
 
 } // namespace feetech_servo
-
-#endif // SERVO_MEM_CONFIG_H

@@ -50,14 +50,25 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(fmt)
 
+
+# Hardware related things, servos etc
+add_library(Hardware
+            src/hardware/servos/feetech/scserial.cpp)
+target_include_directories(Hardware PUBLIC
+                           include/hardware/)
+target_link_libraries(Hardware PUBLIC
+                      Qt::SerialPort)
+
+# Central interface connecting all elements
 add_library(Interface
             src/interface/interface.cpp)
 target_include_directories(Interface PUBLIC
-                           include/interface/)
-target_link_libraries(Interface PRIVATE
-                      Qt::SerialPort)
+                           include/interface/
+                           include/hardware/)
+target_link_libraries(Interface PUBLIC
+                      Hardware)
 
-
+# Front end display
 add_library(GUI
             src/GUI/terminal.cpp)
 target_include_directories(GUI PUBLIC
@@ -70,7 +81,7 @@ target_link_libraries(GUI PUBLIC
                       fmt::fmt
                       magic_enum::magic_enum)
 
-
+# Main executable
 add_executable(servo-interface
                src/main.cpp)
 target_include_directories(servo-interface PRIVATE
