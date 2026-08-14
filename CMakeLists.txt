@@ -50,6 +50,16 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(fmt)
 
+FetchContent_Declare(
+  c-periphery
+  GIT_REPOSITORY https://github.com/vsergeev/c-periphery.git
+  GIT_TAG        v2.5.0
+  GIT_PROGRESS   TRUE
+  GIT_SHALLOW    TRUE
+  EXCLUDE_FROM_ALL
+)
+FetchContent_MakeAvailable(c-periphery)
+
 
 # Hardware related things, servos etc
 add_library(Hardware
@@ -57,7 +67,8 @@ add_library(Hardware
 target_include_directories(Hardware PUBLIC
                            include/hardware/)
 target_link_libraries(Hardware PUBLIC
-                      Qt::SerialPort)
+                      Qt::SerialPort
+                      periphery)
 
 # Central interface connecting all elements
 add_library(Interface

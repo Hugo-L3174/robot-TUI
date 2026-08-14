@@ -1,9 +1,5 @@
 #pragma once
 
-#include <QObject>
-#include <QSerialPort>
-#include <QString>
-
 #define INST_PING 0x01
 #define INST_READ 0x02
 #define INST_WRITE 0x03
@@ -13,11 +9,12 @@
 #define INST_SYNC_WRITE 0x83
 
 #include "servo_types.h"
+#include <serial.h>
 
 namespace feetech_servo
 {
 
-QString getModelType(uint16_t id);
+std::string getModelType(uint16_t id);
 
 enum ModelSeries
 {
@@ -27,12 +24,12 @@ enum ModelSeries
   SCS
 };
 
-ModelSeries getModelSeries(QString modelName);
+ModelSeries getModelSeries(std::string modelName);
 
 class SCSerial
 {
 public:
-  SCSerial(QSerialPort * serial);
+  SCSerial(serial_t * serialPeriph);
 
   void set_end(uint8_t end)
   {
@@ -82,8 +79,9 @@ protected:
   uint8_t sync_read_rx_packet_len_;
   uint8_t * sync_read_rx_packet_;
 
-  QSerialPort * serial_;
   uint16_t timeout_ = 50;
+
+  serial_t * serialPeriph_;
 };
 
 } // namespace feetech_servo

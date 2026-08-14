@@ -8,9 +8,10 @@ namespace feetech_servo
   {                                     \
     (minor << 8 | major), name          \
   }
-QString getModelType(uint16_t id)
+
+std::string getModelType(uint16_t id)
 {
-  static std::map<uint16_t, QString> model_list = {
+  static std::map<uint16_t, std::string> model_list = {
       SERVO_MODEL(5, 0, "SCSXX"),       SERVO_MODEL(5, 4, "SCS009"),      SERVO_MODEL(5, 8, "SCS2332"),
       SERVO_MODEL(5, 12, "SCS45"),      SERVO_MODEL(5, 15, "SCS15"),      SERVO_MODEL(5, 16, "SCS315"),
       SERVO_MODEL(5, 25, "SCS115"),     SERVO_MODEL(5, 35, "SCS215"),     SERVO_MODEL(5, 40, "SCS40"),
@@ -62,7 +63,7 @@ ModelSeries getModelSeries(QString modelName)
   }
 }
 
-SCSerial::SCSerial(QSerialPort * serial) : serial_(serial)
+SCSerial::SCSerial(serial_t * serialPeriph) : serialPeriph_(serialPeriph)
 {
   level_ = 1;
   error_ = 0;
@@ -394,18 +395,17 @@ int SCSerial::read_model_number(int id)
 
 int SCSerial::write(uint8_t * n_dat, int n_len)
 {
-  return serial_->write(reinterpret_cast<const char *>(n_dat), n_len);
+  return serial_write(serialPeriph_, n_dat, n_len);
 }
 
 int SCSerial::read(uint8_t * n_dat, int n_len)
 {
-  if(serial_->bytesAvailable() < n_len) serial_->waitForReadyRead(100);
-  return serial_->read(reinterpret_cast<char *>(n_dat), n_len);
+  return serial_read(serialPeriph_, n_dat, n_len, 5);
 }
 
 int SCSerial::write(uint8_t b_dat)
 {
-  return serial_->write(reinterpret_cast<const char *>(&b_dat), 1);
+  return serial_write(serialPeriph_, &b_dat, 1);
 }
 
 } // namespace feetech_servo

@@ -5,6 +5,8 @@
 #include <vector>
 
 // #include "hardware.h"
+#include "servos/feetech/sms_sts.h"
+#include <serial.h>
 // #include "controller.h"
 
 enum class ConnectionType
@@ -24,7 +26,9 @@ struct ServoInfo
   double kd = 0.;
 
   double position = 0.;
-  bool torque = false;
+  double torque = 0.;
+  double temperature = 0.;
+  bool torqueMode = false;
 };
 
 class Interface
@@ -73,6 +77,11 @@ private:
   // To be detected at construction
   // May need to be more specific than just the names
   std::vector<std::string> serialPorts_;
+
+  // @todo should be handled at hardware layer, here for testing for now
+  serial_t * serial_;
+  feetech_servo::SCSerial * scserial_;
+  feetech_servo::SMS_STS * sms_sts_serial_;
 
   // Servo ids
   std::vector<int> servoIds_;
