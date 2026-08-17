@@ -43,17 +43,17 @@ std::string getModelType(uint16_t id)
 }
 #undef SERVO_MODEL
 
-ModelSeries getModelSeries(QString modelName)
+ModelSeries getModelSeries(std::string modelName)
 {
-  if(modelName.startsWith("STS"))
+  if(modelName.starts_with("STS"))
   {
     return STS;
   }
-  else if(modelName.startsWith("SC"))
+  else if(modelName.starts_with("SC"))
   {
     return SCS;
   }
-  else if(modelName.startsWith("SM") && modelName.contains("BL"))
+  else if(modelName.starts_with("SM") && modelName.find("BL") != std::string::npos)
   {
     return SMBL;
   }

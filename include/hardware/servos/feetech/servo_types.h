@@ -1,7 +1,8 @@
 #pragma once
 
-#include <QString>
 #include <map>
+#include <string>
+#include <vector>
 
 namespace feetech_servo
 {
@@ -9,7 +10,7 @@ namespace feetech_servo
 struct MemoryConfig
 {
   uint8_t address;
-  QString name;
+  std::string name;
   uint8_t size;
   uint16_t default_value;
   int8_t dir_bit; // ?
