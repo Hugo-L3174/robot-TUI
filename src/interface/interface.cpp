@@ -5,22 +5,19 @@
 
 Interface::Interface() : connected_(false)
 {
-  serial_ = serial_new();
-  scserial_ = new feetech_servo::SCSerial(serial_);
-  sms_sts_serial_ = new feetech_servo::SMS_STS(scserial_);
+  // @todo how to handle servo hardware factory ? probably need to pass arguments from front end?
+  // for now hardcoded feetech type
+  setupServos(MotorType::Feetech);
 }
 
 void Interface::connect(const std::string & device)
 {
-  // Default parameters that should be set by terminal or a loaded config file
-  int baudRate = 1000000;
-  connected_ = serial_open(serial_, device.c_str(), baudRate) < 0 ? false : true;
+  connected_ = servoHardware_->openLink(device);
 }
 
 void Interface::disconnect()
 {
-  // call hardware close link
-  serial_close(serial_);
+  servoHardware_->closeLink();
   servoIds_.clear();
   connected_ = false;
 }
@@ -45,43 +42,16 @@ void Interface::detectSerialPorts()
 
 void Interface::detectServos()
 {
-  servoIds_.clear();
-  int searchId = 0;
-  // @fixme find a non blocking way for doing this
-  // in theory id can go up to 255 for a single bus, in practice I know I have just 6 for now
-  int ret;
-  while(searchId < 7 /*256*/)
-  {
-    ret = scserial_->ping(searchId);
-    if(0 < ret)
-    {
-      servoIds_.push_back(ret);
-    }
-    searchId++;
-  }
+  servoIds_ = servoHardware_->detectServos();
 }
 
 ServoInfo Interface::getServoData(int id)
 {
-  // hardcoded test
-  ServoInfo servo;
+  return servoHardware_->getServoData(id);
+}
 
-  servo.id = id;
-
-  servo.voltage = sms_sts_serial_->read_voltage(id);
-  servo.current = sms_sts_serial_->read_current(id);
-
-  servo.kp = 10.;
-  servo.ki = 0.;
-  servo.kd = 2.;
-
-  // @todo add temperature as well
-  servo.temperature = sms_sts_serial_->read_temperature(id);
-
-  servo.position = sms_sts_serial_->read_position(id);
-  servo.torque = sms_sts_serial_->read_load(id);
-  // @todo look if there is a torque control or position mode and if it can be read
-  servo.torqueMode = true;
-
-  return servo;
+void Interface::setupServos(MotorType type)
+{
+  servoHardware_ = setupServoType(type);
+  // @fixme alert on nullptr
 }

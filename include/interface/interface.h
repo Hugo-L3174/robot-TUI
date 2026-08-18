@@ -1,34 +1,19 @@
 #pragma once
 
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 
-// #include "hardware.h"
-#include "servos/feetech/sms_sts.h"
 #include <serial.h>
+
+#include "servos/servo_factory.h"
+#include "servos/servos.h"
 // #include "controller.h"
 
 enum class ConnectionType
 {
   Serial,
-};
-
-struct ServoInfo
-{
-  int id = 0;
-
-  double voltage = 0.;
-  double current = 0.;
-
-  double kp = 0.;
-  double ki = 0.;
-  double kd = 0.;
-
-  double position = 0.;
-  double torque = 0.;
-  double temperature = 0.;
-  bool torqueMode = false;
 };
 
 class Interface
@@ -64,6 +49,9 @@ public:
   }
   ServoInfo getServoData(int id);
 
+  // Factory to build the correct type of ServoHardware
+  void setupServos(MotorType type);
+
   // @todo this is a single value now but might want to have a vector
   // and servos would be a map with the connection link or robot as key?
   // In case single controller with different connections (multi-robot)
@@ -74,14 +62,11 @@ private:
   // controller& controller_;
   bool connected_;
 
+  std::unique_ptr<ServoHardware> servoHardware_;
+
   // To be detected at construction
   // May need to be more specific than just the names
   std::vector<std::string> serialPorts_;
-
-  // @todo should be handled at hardware layer, here for testing for now
-  serial_t * serial_;
-  feetech_servo::SCSerial * scserial_;
-  feetech_servo::SMS_STS * sms_sts_serial_;
 
   // Servo ids
   std::vector<int> servoIds_;

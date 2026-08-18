@@ -19,8 +19,7 @@ public:
   void stopServoUpdateThread();
 
 private:
-  // @fixme should probably be a ref or ptr
-  Interface interface_;
+  Interface & interface_;
 
   // Main app object
   ftxui::App screen_;
