@@ -64,6 +64,7 @@ FetchContent_MakeAvailable(c-periphery)
 # Hardware related things, servos etc
 add_library(Hardware
             src/hardware/servos/servo_factory.cpp
+            src/hardware/servos/simulated.cpp
             src/hardware/servos/feetech/feetech.cpp
             src/hardware/servos/feetech/scserial.cpp)
 target_include_directories(Hardware PUBLIC

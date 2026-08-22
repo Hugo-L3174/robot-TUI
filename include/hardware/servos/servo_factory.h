@@ -5,6 +5,7 @@
 
 enum class MotorType
 {
+  Simulated,
   Feetech,
 };
 

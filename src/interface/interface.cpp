@@ -7,7 +7,8 @@ Interface::Interface() : connected_(false)
 {
   // @todo how to handle servo hardware factory ? probably need to pass arguments from front end?
   // for now hardcoded feetech type
-  setupServos(MotorType::Feetech);
+  // setupServos(MotorType::Feetech);
+  setupServos(MotorType::Simulated);
 }
 
 void Interface::connect(const std::string & device)
