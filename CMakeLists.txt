@@ -73,6 +73,17 @@ target_link_libraries(Hardware PUBLIC
                       Qt::SerialPort
                       periphery)
 
+# Controller to compute commands and take sensor data
+add_library(Controller
+            src/controller/controller_factory.cpp
+            src/controller/manual.cpp
+            src/controller/mc_rtc/mc_controller.cpp)
+            # XXX how to handle conditional include of mc_rtc ?
+target_include_directories(Controller PUBLIC
+                           include/controller/)
+# target_link_libraries(Controller
+#                       mc_rtc)
+
 # Central interface connecting all elements
 add_library(Interface
             src/interface/interface.cpp)
@@ -80,7 +91,8 @@ target_include_directories(Interface PUBLIC
                            include/interface/
                            include/hardware/)
 target_link_libraries(Interface PUBLIC
-                      Hardware)
+                      Hardware
+                      Controller)
 
 # Front end display
 add_library(GUI

@@ -56,3 +56,9 @@ void Interface::setupServos(MotorType type)
   servoHardware_ = setupServoType(type);
   // @fixme alert on nullptr
 }
+
+void Interface::setupController(ControllerType type)
+{
+  controller_ = setupControllerType(type);
+  // @fixme alert on nullptr
+}

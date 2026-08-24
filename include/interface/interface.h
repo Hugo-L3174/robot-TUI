@@ -8,8 +8,8 @@
 #include <serial.h>
 
 #include "servos/servo_factory.h"
-#include "servos/servos.h"
-// #include "controller.h"
+
+#include "controller_factory.h"
 
 enum class ConnectionType
 {
@@ -52,6 +52,9 @@ public:
   // Factory to build the correct type of ServoHardware
   void setupServos(MotorType type);
 
+  // Factory to build the correct type of Controller
+  void setupController(ControllerType type);
+
   // @todo this is a single value now but might want to have a vector
   // and servos would be a map with the connection link or robot as key?
   // In case single controller with different connections (multi-robot)
@@ -63,6 +66,7 @@ private:
   bool connected_;
 
   std::unique_ptr<ServoHardware> servoHardware_;
+  std::unique_ptr<ControllerInterface> controller_;
 
   // To be detected at construction
   // May need to be more specific than just the names
