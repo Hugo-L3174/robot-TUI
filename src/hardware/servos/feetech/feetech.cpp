@@ -43,27 +43,78 @@ std::vector<int> FeetechServos::detectServos()
   return servoIds;
 }
 
-ServoInfo FeetechServos::getServoData(int id)
+ServoInfo FeetechServos::getServoData(const int & id)
 {
   ServoInfo servoData;
 
   servoData.id = id;
 
-  servoData.voltage = sms_sts_serial_->read_voltage(id);
-  servoData.current = sms_sts_serial_->read_current(id);
-
-  servoData.kp = 10.;
-  servoData.ki = 0.;
-  servoData.kd = 2.;
-
-  servoData.temperature = sms_sts_serial_->read_temperature(id);
-
-  // feetech servos output integer value between 0 and 4095 (12 bit encoding)
+  // feetech servos output integer value over a 4096 range (12 bit encoding)
   // --> rad pos = int pos * 2pi / 4096
   servoData.position = (sms_sts_serial_->read_position(id) * 2 * M_PI) / 4096;
+  servoData.velocity = sms_sts_serial_->read_speed(id);
   servoData.torque = sms_sts_serial_->read_load(id);
-  // @todo look if there is a torque control or position mode and if it can be read
-  servoData.torqueMode = true;
+
+  servoData.voltage = sms_sts_serial_->read_voltage_double(id);
+  servoData.current = sms_sts_serial_->read_current(id) * 6.5; // convert to mA
+  servoData.temperature = sms_sts_serial_->read_temperature(id);
+  servoData.torqueEnabled = true;
+
+  servoData.servoGains.kp = 10.;
+  servoData.servoGains.ki = 0.;
+  servoData.servoGains.kd = 2.;
+
+  servoData.servoTargets.pos = sms_sts_serial_->read_goal(id);
+  servoData.servoTargets.vel = 0.;
+  servoData.servoTargets.acc = 0.;
 
   return servoData;
+}
+
+int FeetechServos::posTargetToServo(const double & posTarget)
+{
+  // target needs to be converted from double to int 0~4095
+  const double unitStep = 2. * M_PI / 4096;
+  // normalize target to 0-2pi range
+  double normalizedTargetPos = std::fmod(posTarget, 2.0 * M_PI);
+  if(normalizedTargetPos < 0.)
+  {
+    normalizedTargetPos += 2.0 * M_PI;
+  }
+  // scale and clamp to 0-4095 range
+  int position = std::clamp(static_cast<int>(normalizedTargetPos * unitStep), 0, 4095);
+  return position;
+}
+
+int FeetechServos::velTargetToServo(const double & velTarget)
+{
+  const double unitStep = 2. * M_PI / 4096;
+  // target vel needs to be converted to int 0~3400 for target speed in unitStep/s
+  // the value has to be unsigned, the firmware automatically signs it according to the position error
+  // also clamping starting at 1 because 0 is not zero velocity but maximum velocity
+  int speed = std::clamp(static_cast<int>(std::abs(velTarget * unitStep)), 1, 3400);
+  return speed;
+}
+
+bool FeetechServos::setServoTarget(const int & id, const ServoInfo::targets & target)
+{
+  // no feedforward acceleration on sts3215, using 0 to deactivate hardware acceleration ramp
+  return sms_sts_serial_->write_pos_ex(id, posTargetToServo(target.pos), velTargetToServo(target.vel));
+}
+
+bool FeetechServos::setServoTargets(const std::vector<int> & ids, std::vector<ServoInfo::targets> targets)
+{
+  // convert to expected uint8_t format
+  std::vector<uint8_t> servoIds;
+  servoIds.assign(ids.begin(), ids.end());
+
+  std::vector<int16_t> targetsPos;
+  std::vector<uint16_t> targetsVel;
+  for(const auto & target : targets)
+  {
+    targetsPos.emplace_back(posTargetToServo(target.pos));
+    targetsVel.emplace_back(velTargetToServo(target.vel));
+  }
+  sms_sts_serial_->sync_write_pos_ex(servoIds.data(), ids.size(), targetsPos.data(), targetsVel.data(),
+                                     std::vector<uint8_t>(ids.size()).data()); // zero acc vector
 }

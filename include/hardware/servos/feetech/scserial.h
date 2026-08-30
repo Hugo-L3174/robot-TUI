@@ -36,9 +36,13 @@ public:
     end_ = end;
   }
 
+  // Write data normally
   int gen_write(uint8_t id, uint8_t mem_addr, uint8_t * n_dat, uint8_t n_len);
+  // Write data in a buffer and wait for action signal to trigger it
   int reg_write(uint8_t id, uint8_t mem_addr, uint8_t * n_dat, uint8_t n_len);
+  // Trigger buffered data write (broadcast by default)
   int reg_write_action(uint8_t id = 0xfe);
+  // Write sychronously to all ids with each their data
   void sync_write(uint8_t id[], uint8_t idn, uint8_t mem_addr, uint8_t * n_dat, uint8_t n_len);
   int write_byte(uint8_t id, uint8_t mem_addr, uint8_t b_dat);
   int write_word(uint8_t id, uint8_t mem_addr, uint16_t w_dat);

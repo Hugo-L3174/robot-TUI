@@ -5,19 +5,33 @@
 
 struct ServoInfo
 {
+  struct gains
+  {
+    double kp = 0.;
+    double kd = 0.;
+    double ki = 0.;
+  };
+
+  struct targets
+  {
+    // goals in rad
+    double pos = 0;
+    double vel = 0;
+    double acc = 0;
+  };
+
   int id = 0;
 
+  double position = 0.;
+  double velocity = 0.;
   double voltage = 0.;
   double current = 0.;
-
-  double kp = 0.;
-  double ki = 0.;
-  double kd = 0.;
-
-  double position = 0.;
   double torque = 0.;
   double temperature = 0.;
-  bool torqueMode = false;
+  bool torqueEnabled = false;
+
+  gains servoGains;
+  targets servoTargets;
 };
 
 class ServoHardware
@@ -29,7 +43,9 @@ public:
   virtual bool closeLink() = 0;
   virtual std::vector<int> detectServos() = 0;
 
-  virtual ServoInfo getServoData(int id) = 0;
+  virtual ServoInfo getServoData(const int & id) = 0;
+  virtual bool setServoTarget(const int & id, const ServoInfo::targets & target) = 0;
+  virtual bool setServoTargets(const std::vector<int> & ids, std::vector<ServoInfo::targets> targets) = 0;
 
 private:
 };

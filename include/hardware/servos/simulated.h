@@ -17,7 +17,9 @@ public:
   bool closeLink() override;
   std::vector<int> detectServos() override;
 
-  ServoInfo getServoData(int id) override;
+  ServoInfo getServoData(const int & id) override;
+  bool setServoTarget(const int & id, const ServoInfo::targets & target) override;
+  bool setServoTargets(const std::vector<int> & ids, std::vector<ServoInfo::targets> targets) override;
 
 private:
   // Random generator for noise

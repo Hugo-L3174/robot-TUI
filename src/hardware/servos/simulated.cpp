@@ -9,15 +9,15 @@ SimulatedServos::SimulatedServos()
   for(int i = 1; i < 7; i++)
   {
     ServoInfo dummy{.id{i},
+                    .position{0.},
+                    .velocity{0.},
                     .voltage{7.8},
                     .current{0.},
-                    .kp{10.},
-                    .ki{0.},
-                    .kd{0.},
-                    .position{0.},
                     .torque{0.},
                     .temperature{30.},
-                    .torqueMode{false}};
+                    .torqueEnabled{false},
+                    .servoGains{10., 0., 0.},
+                    .servoTargets{0., 0., 0.}};
     dummyServos_.emplace(i, dummy);
   }
 }
@@ -45,7 +45,7 @@ std::vector<int> SimulatedServos::detectServos()
   return servoIds;
 }
 
-ServoInfo SimulatedServos::getServoData(int id)
+ServoInfo SimulatedServos::getServoData(const int & id)
 {
   std::lock_guard<std::mutex> lock(servoDataMutex_);
   return dummyServos_.at(id);
@@ -62,6 +62,14 @@ void SimulatedServos::simulateDummyServoUpdate(ServoInfo & dummyData)
   dummyData.current = 0.01 + randomNoise(0.005);
   dummyData.voltage = 7.8 + randomNoise(0.2);
   dummyData.temperature = 30. + randomNoise(1.);
+  // assuming the timestep of the thread has passed, update simulated state
+  auto posError = dummyData.servoTargets.pos - dummyData.position;
+  auto velError = dummyData.servoTargets.vel - dummyData.velocity;
+  auto commandAcc =
+      dummyData.servoTargets.acc + dummyData.servoGains.kp * posError + dummyData.servoGains.kd * velError;
+
+  dummyData.velocity += commandAcc * 0.01;
+  dummyData.position += dummyData.velocity * 0.01; // semi implicit euler
 }
 
 void SimulatedServos::startServoUpdateThread()
@@ -83,7 +91,7 @@ void SimulatedServos::startServoUpdateThread()
           }
           lock.unlock();
 
-          std::this_thread::sleep_for(std::chrono::milliseconds(100));
+          std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
       });
 }
@@ -97,4 +105,19 @@ void SimulatedServos::stopServoUpdateThread()
   // Set the jthread stop token
   servoDataUpdater_.request_stop();
   servoDataUpdater_.join();
+}
+
+bool SimulatedServos::setServoTarget(const int & id, const ServoInfo::targets & target)
+{
+  std::lock_guard<std::mutex> lock(servoDataMutex_);
+  dummyServos_.at(id).servoTargets = target;
+}
+
+bool SimulatedServos::setServoTargets(const std::vector<int> & ids, std::vector<ServoInfo::targets> targets)
+{
+  std::lock_guard<std::mutex> lock(servoDataMutex_);
+  for(size_t i = 0; i < ids.size(); i++)
+  {
+    dummyServos_.at(ids[i]).servoTargets = targets[i];
+  }
 }

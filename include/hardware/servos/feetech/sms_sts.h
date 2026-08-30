@@ -57,6 +57,16 @@ public:
   }
 
   // Normally write a single servo position command
+  /**
+   * @brief
+   *
+   * @param ID 0-253, 254=broadcast
+   * @param Position target pose 0-4095 steps (0.08789°/0.001534rad)
+   * @param Speed target vel 0-3400 steps/s (0 is max speed), i.e. max 5.21526 rad/s
+   * @param ACC acceleration ramp profile 0-254 units of 100 steps/s^2 (0 deactivates the profile).
+   * This isn't for feedforward acceleration but the parameter for the firmware trapezoidal profile generation.
+   * @return 1 on success 0 on failure
+   */
   int write_pos_ex(uint8_t ID, int16_t Position, uint16_t Speed, uint8_t ACC = 0)
   {
     if(Position < 0)
@@ -73,7 +83,7 @@ public:
     return scserial_->gen_write(ID, SMS_STS_ACC, bBuf, 7);
   }
 
-  // Asynchronously write a single servo position command (reg write action takes effect)
+  // Asynchronously write a single servo position command (reg write does not takes effect before action is called)
   int reg_write_pos_ex(uint8_t ID, int16_t Position, uint16_t Speed, uint8_t ACC = 0)
   {
     if(Position < 0)
