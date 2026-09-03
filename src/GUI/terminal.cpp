@@ -115,7 +115,8 @@ TerminalApp::TerminalApp(Interface & interface)
 
         std::vector<std::vector<std::string>> tableRows;
         // First row (categories)
-        tableRows.push_back({"ID", "Voltage", "Current", "KP", "KI", "Position", "Torque"});
+        tableRows.push_back({"ID", "Voltage", "Current", "KP", "KD", "Position (rad)", "Position target",
+                             "Velocity (rad/s)", "Torque"});
 
         std::unique_lock<std::mutex> lock(servoMapMutex_);
         for(const auto & [id, servoData] : servoMap_)
@@ -124,11 +125,13 @@ TerminalApp::TerminalApp(Interface & interface)
           tableRows.push_back(
 						{
 							std::to_string(id),
-							fmt::format("{:.5f}", servoData.voltage),
-              fmt::format("{:.5f}", servoData.current),
-							fmt::format("{:.3f}", servoData.kp),
-              fmt::format("{:.3f}", servoData.ki),
+							fmt::format("{:.4f}", servoData.voltage),
+              fmt::format("{:.4f}", servoData.current),
+							fmt::format("{:.2f}", servoData.servoGains.kp),
+              fmt::format("{:.2f}", servoData.servoGains.kd),
 							fmt::format("{:.5f}", servoData.position),
+              fmt::format("{:.5f}", servoData.servoTargets.pos),
+              fmt::format("{:.5f}", servoData.velocity),
               servoData.torque ? "ON" : "OFF"
 						}
 					);
