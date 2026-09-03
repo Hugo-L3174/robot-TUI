@@ -49,24 +49,27 @@ ServoInfo FeetechServos::getServoData(const int & id)
 
   servoData.id = id;
 
+  // @todo maybe use feedback function instead to get full sram buffer instead of several calls
+  // check timings
+
   // feetech servos output integer value over a 4096 range (12 bit encoding)
   // --> rad pos = int pos * 2pi / 4096
   servoData.position = (sms_sts_serial_->read_position(id) * 2 * M_PI) / 4096;
-  servoData.velocity = sms_sts_serial_->read_speed(id);
+  // speed value is steps/s so value in rad/s is
+  // rad/s vel = int vel * 2pi / 4096
+  servoData.velocity = (sms_sts_serial_->read_speed(id) * 2 * M_PI) / 4096;
   servoData.torque = sms_sts_serial_->read_load(id);
 
   servoData.voltage = sms_sts_serial_->read_voltage_double(id);
   servoData.current = sms_sts_serial_->read_current(id) * 6.5; // convert to mA
   servoData.temperature = sms_sts_serial_->read_temperature(id);
-  servoData.torqueEnabled = true;
+  servoData.torqueEnabled = sms_sts_serial_->read_torque_state(id);
 
-  servoData.servoGains.kp = 10.;
-  servoData.servoGains.ki = 0.;
-  servoData.servoGains.kd = 2.;
+  servoData.servoGains.kp = sms_sts_serial_->read_pgain(id);
+  servoData.servoGains.kd = sms_sts_serial_->read_dgain(id);
 
-  servoData.servoTargets.pos = sms_sts_serial_->read_goal(id);
-  servoData.servoTargets.vel = 0.;
-  servoData.servoTargets.acc = 0.;
+  servoData.servoTargets.pos = sms_sts_serial_->read_pos_goal(id);
+  servoData.servoTargets.vel = sms_sts_serial_->read_vel_goal(id);
 
   return servoData;
 }

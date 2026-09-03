@@ -16,6 +16,10 @@ namespace feetech_servo
 #define SMS_STS_MIN_ANGLE_LIMIT_H 10
 #define SMS_STS_MAX_ANGLE_LIMIT_L 11
 #define SMS_STS_MAX_ANGLE_LIMIT_H 12
+#define SMS_STS_P_GAIN 21
+#define SMS_STS_D_GAIN 22
+#define SMS_STS_I_GAIN 23
+#define SMS_STS_PUNCH 24
 #define SMS_STS_CW_DEAD 26
 #define SMS_STS_CCW_DEAD 27
 #define SMS_STS_OFS_L 31
@@ -168,6 +172,7 @@ public:
   }
 
   // Torque control command
+  // @param Enable 0 for deactivate, 1 for activate
   int enable_torque(uint8_t ID, uint8_t Enable)
   {
     return scserial_->write_byte(ID, SMS_STS_TORQUE_ENABLE, Enable);
@@ -190,6 +195,7 @@ public:
   }
 
   // Feedback servo information
+  // Reads all data starting from SMS_STS_PRESENT_POSITION_L address until + Mem size
   int feedback(int ID)
   {
     int nLen = scserial_->read(ID, SMS_STS_PRESENT_POSITION_L, Mem, sizeof(Mem));
@@ -369,7 +375,7 @@ public:
     return Current;
   }
 
-  int read_goal(int ID)
+  int read_pos_goal(int ID)
   {
     int Goal = -1;
     {
@@ -386,6 +392,64 @@ public:
       Goal = -(Goal & ~(1 << 15));
     }
     return Goal;
+  }
+
+  int read_vel_goal(int ID)
+  {
+    int Goal = -1;
+    {
+      err_ = 0;
+      Goal = scserial_->read_word(ID, SMS_STS_GOAL_SPEED_L);
+      if(Goal == -1)
+      {
+        err_ = 1;
+        return -1;
+      }
+    }
+    if(!err_ && (Goal & (1 << 15)))
+    {
+      Goal = -(Goal & ~(1 << 15));
+    }
+    return Goal;
+  }
+
+  int read_pgain(int ID)
+  {
+    int pgain = -1;
+    err_ = 0;
+    pgain = scserial_->read_byte(ID, SMS_STS_P_GAIN);
+    if(pgain == -1)
+    {
+      err_ = 1;
+      return -1;
+    }
+    return pgain;
+  }
+
+  int read_dgain(int ID)
+  {
+    int dgain = -1;
+    err_ = 0;
+    dgain = scserial_->read_byte(ID, SMS_STS_D_GAIN);
+    if(dgain == -1)
+    {
+      err_ = 1;
+      return -1;
+    }
+    return dgain;
+  }
+
+  int read_torque_state(int ID)
+  {
+    int dgain = -1;
+    err_ = 0;
+    dgain = scserial_->read_byte(ID, SMS_STS_TORQUE_ENABLE);
+    if(dgain == -1)
+    {
+      err_ = 1;
+      return -1;
+    }
+    return dgain;
   }
 
 private:
