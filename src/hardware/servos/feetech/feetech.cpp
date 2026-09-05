@@ -54,7 +54,8 @@ ServoInfo FeetechServos::getServoData(const int & id)
 
   // feetech servos output integer value over a 4096 range (12 bit encoding)
   // --> rad pos = int pos * 2pi / 4096
-  servoData.position = (sms_sts_serial_->read_position(id) * 2 * M_PI) / 4096;
+  // substracting pi to set value between [-pi, pi]
+  servoData.position = ((sms_sts_serial_->read_position(id) * 2 * M_PI) / 4096) - M_PI;
   // speed value is steps/s so value in rad/s is
   // rad/s vel = int vel * 2pi / 4096
   servoData.velocity = (sms_sts_serial_->read_speed(id) * 2 * M_PI) / 4096;
@@ -68,8 +69,9 @@ ServoInfo FeetechServos::getServoData(const int & id)
   servoData.servoGains.kp = sms_sts_serial_->read_pgain(id);
   servoData.servoGains.kd = sms_sts_serial_->read_dgain(id);
 
-  servoData.servoTargets.pos = sms_sts_serial_->read_pos_goal(id);
-  servoData.servoTargets.vel = sms_sts_serial_->read_vel_goal(id);
+  // same logic as for measured values
+  servoData.servoTargets.pos = ((sms_sts_serial_->read_pos_goal(id) * 2 * M_PI) / 4096) - M_PI;
+  servoData.servoTargets.vel = (sms_sts_serial_->read_vel_goal(id) * 2 * M_PI) / 4096;
 
   return servoData;
 }
@@ -78,14 +80,14 @@ int FeetechServos::posTargetToServo(const double & posTarget)
 {
   // target needs to be converted from double to int 0~4095
   const double unitStep = 2. * M_PI / 4096;
-  // normalize target to 0-2pi range
-  double normalizedTargetPos = std::fmod(posTarget, 2.0 * M_PI);
+  // normalize target from [-pi, pi] to [0, 2pi] range
+  double normalizedTargetPos = std::fmod(posTarget + M_PI, 2.0 * M_PI);
   if(normalizedTargetPos < 0.)
   {
     normalizedTargetPos += 2.0 * M_PI;
   }
   // scale and clamp to 0-4095 range
-  int position = std::clamp(static_cast<int>(normalizedTargetPos * unitStep), 0, 4095);
+  int position = std::clamp(static_cast<int>(std::round(normalizedTargetPos / unitStep)), 0, 4095);
   return position;
 }
 
@@ -120,4 +122,5 @@ bool FeetechServos::setServoTargets(const std::vector<int> & ids, std::vector<Se
   }
   sms_sts_serial_->sync_write_pos_ex(servoIds.data(), ids.size(), targetsPos.data(), targetsVel.data(),
                                      std::vector<uint8_t>(ids.size()).data()); // zero acc vector
+  return true;
 }
