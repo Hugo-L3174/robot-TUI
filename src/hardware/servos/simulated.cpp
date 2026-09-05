@@ -8,16 +8,8 @@ SimulatedServos::SimulatedServos()
   randGen_ = std::mt19937(rd());
   for(int i = 1; i < 7; i++)
   {
-    ServoInfo dummy{.id{i},
-                    .position{0.},
-                    .velocity{0.},
-                    .voltage{7.8},
-                    .current{0.},
-                    .torque{0.},
-                    .temperature{30.},
-                    .torqueEnabled{false},
-                    .servoGains{10., 0., 0.},
-                    .servoTargets{0., 0., 0.}};
+    // Only initializing non default arguments
+    ServoInfo dummy{.id = i, .voltage = 7.8, .temperature = 30., .servoGains = {.kp = 10., .kd = 6.32}};
     dummyServos_.emplace(i, dummy);
   }
 }
@@ -62,14 +54,18 @@ void SimulatedServos::simulateDummyServoUpdate(ServoInfo & dummyData)
   dummyData.current = 0.01 + randomNoise(0.005);
   dummyData.voltage = 7.8 + randomNoise(0.2);
   dummyData.temperature = 30. + randomNoise(1.);
-  // assuming the timestep of the thread has passed, update simulated state
+  // assuming the 100ms timestep of the thread has passed, update simulated state
   auto posError = dummyData.servoTargets.pos - dummyData.position;
   auto velError = dummyData.servoTargets.vel - dummyData.velocity;
   auto commandAcc =
       dummyData.servoTargets.acc + dummyData.servoGains.kp * posError + dummyData.servoGains.kd * velError;
 
-  dummyData.velocity += commandAcc * 0.01;
-  dummyData.position += dummyData.velocity * 0.01; // semi implicit euler
+  // simulating motion only if simulated servo on
+  if(dummyData.torqueEnabled)
+  {
+    dummyData.velocity += commandAcc * 0.01;
+    dummyData.position += dummyData.velocity * 0.01; // semi implicit euler
+  }
 }
 
 void SimulatedServos::startServoUpdateThread()
@@ -110,7 +106,12 @@ void SimulatedServos::stopServoUpdateThread()
 bool SimulatedServos::setServoTarget(const int & id, const ServoInfo::targets & target)
 {
   std::lock_guard<std::mutex> lock(servoDataMutex_);
-  dummyServos_.at(id).servoTargets = target;
+  if(dummyServos_.contains(id))
+  {
+    dummyServos_.at(id).servoTargets = target;
+    return true;
+  }
+  return false;
 }
 
 bool SimulatedServos::setServoTargets(const std::vector<int> & ids, std::vector<ServoInfo::targets> targets)
@@ -120,4 +121,5 @@ bool SimulatedServos::setServoTargets(const std::vector<int> & ids, std::vector<
   {
     dummyServos_.at(ids[i]).servoTargets = targets[i];
   }
+  return true;
 }
