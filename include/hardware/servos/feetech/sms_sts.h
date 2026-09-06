@@ -194,6 +194,58 @@ public:
     return scserial_->write_byte(ID, SMS_STS_TORQUE_ENABLE, 128);
   }
 
+  // Set gains without unlocking eeprom, changes will not be kept after power off
+  int set_PID_gains_temp(uint8_t ID, uint8_t PGain, uint8_t DGain, uint8_t IGain)
+  {
+    int ret = scserial_->write_byte(ID, SMS_STS_P_GAIN, PGain);
+    if(ret == 0)
+    {
+      return 1;
+    }
+    ret = scserial_->write_byte(ID, SMS_STS_D_GAIN, DGain);
+    if(ret == 0)
+    {
+      return 1;
+    }
+    ret = scserial_->write_byte(ID, SMS_STS_I_GAIN, IGain);
+    if(ret == 0)
+    {
+      return 1;
+    }
+    return 0;
+  }
+
+  // Set gains in eeprom, changes will be kept after power off
+  int set_PID_gains(uint8_t ID, uint8_t PGain, uint8_t DGain, uint8_t IGain)
+  {
+    int ret = unlock_eprom(ID);
+    if(ret == 0)
+    {
+      return 1;
+    }
+    ret = scserial_->write_byte(ID, SMS_STS_P_GAIN, PGain);
+    if(ret == 0)
+    {
+      return 1;
+    }
+    ret = scserial_->write_byte(ID, SMS_STS_D_GAIN, DGain);
+    if(ret == 0)
+    {
+      return 1;
+    }
+    ret = scserial_->write_byte(ID, SMS_STS_I_GAIN, IGain);
+    if(ret == 0)
+    {
+      return 1;
+    }
+    ret = lock_eprom(ID);
+    if(ret == 0)
+    {
+      return 1;
+    }
+    return 0;
+  }
+
   // Feedback servo information
   // Reads all data starting from SMS_STS_PRESENT_POSITION_L address until + Mem size
   int feedback(int ID)
