@@ -44,6 +44,8 @@ public:
   virtual std::vector<int> detectServos() = 0;
 
   virtual ServoInfo getServoData(const int & id) = 0;
+  virtual bool servoOn(const int & id, const bool & activate) = 0;
+  virtual bool setServoGains(const int & id, const double & P, const double & D, const double & I) = 0;
   virtual bool setServoTarget(const int & id, const ServoInfo::targets & target) = 0;
   virtual bool setServoTargets(const std::vector<int> & ids, std::vector<ServoInfo::targets> targets) = 0;
 

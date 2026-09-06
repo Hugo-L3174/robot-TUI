@@ -103,6 +103,30 @@ void SimulatedServos::stopServoUpdateThread()
   servoDataUpdater_.join();
 }
 
+bool SimulatedServos::servoOn(const int & id, const bool & activate)
+{
+  std::lock_guard<std::mutex> lock(servoDataMutex_);
+  if(dummyServos_.contains(id))
+  {
+    dummyServos_.at(id).torqueEnabled = activate;
+    return true;
+  }
+  return false;
+}
+
+bool SimulatedServos::setServoGains(const int & id, const double & P, const double & D, const double & I)
+{
+  std::lock_guard<std::mutex> lock(servoDataMutex_);
+  if(dummyServos_.contains(id))
+  {
+    dummyServos_.at(id).servoGains.kp = P;
+    dummyServos_.at(id).servoGains.kd = D;
+    dummyServos_.at(id).servoGains.ki = I;
+    return true;
+  }
+  return false;
+}
+
 bool SimulatedServos::setServoTarget(const int & id, const ServoInfo::targets & target)
 {
   std::lock_guard<std::mutex> lock(servoDataMutex_);
@@ -119,6 +143,10 @@ bool SimulatedServos::setServoTargets(const std::vector<int> & ids, std::vector<
   std::lock_guard<std::mutex> lock(servoDataMutex_);
   for(size_t i = 0; i < ids.size(); i++)
   {
+    if(!dummyServos_.contains(ids[i]))
+    {
+      return false;
+    }
     dummyServos_.at(ids[i]).servoTargets = targets[i];
   }
   return true;

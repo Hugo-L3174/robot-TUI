@@ -76,6 +76,17 @@ ServoInfo FeetechServos::getServoData(const int & id)
   return servoData;
 }
 
+bool FeetechServos::servoOn(const int & id, const bool & activate)
+{
+  return sms_sts_serial_->enable_torque(id, activate);
+}
+
+bool FeetechServos::setServoGains(const int & id, const double & P, const double & D, const double & I)
+{
+  // Setting gains in non eeprom value
+  return sms_sts_serial_->set_PID_gains_temp(id, P, D, I);
+  // return sms_sts_serial_->set_PID_gains(id, P, D, I);
+}
 int FeetechServos::posTargetToServo(const double & posTarget)
 {
   // target needs to be converted from double to int 0~4095
