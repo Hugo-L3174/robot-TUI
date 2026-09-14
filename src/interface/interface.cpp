@@ -51,6 +51,17 @@ ServoInfo Interface::getServoData(int id)
   return servoHardware_->getServoData(id);
 }
 
+bool Interface::setServoTarget(int id, double targetPos, double targetVel, double targetAcc)
+{
+  ServoInfo::targets servoTarget{.pos = targetPos, .vel = targetVel, .acc = targetAcc};
+  return servoHardware_->setServoTarget(id, servoTarget);
+}
+
+bool Interface::setServoGains(int id, double P, double D, double I)
+{
+  return servoHardware_->setServoGains(id, P, D, I);
+}
+
 void Interface::setupServos(MotorType type)
 {
   servoHardware_ = setupServoType(type);
