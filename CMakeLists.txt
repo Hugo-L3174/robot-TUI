@@ -96,11 +96,11 @@ target_link_libraries(Interface PUBLIC
                       Controller)
 
 # Front end display
-add_library(GUI
-            src/GUI/terminal.cpp)
-target_include_directories(GUI PUBLIC
-                           include/GUI/)
-target_link_libraries(GUI PUBLIC
+add_library(TUI
+            src/TUI/terminal.cpp)
+target_include_directories(TUI PUBLIC
+                           include/TUI/)
+target_link_libraries(TUI PUBLIC
                       Interface
                       ftxui::screen
                       ftxui::dom
@@ -112,6 +112,6 @@ target_link_libraries(GUI PUBLIC
 add_executable(servo-interface
                src/main.cpp)
 target_include_directories(servo-interface PRIVATE
-                           include/GUI)
+                           include/TUI)
 target_link_libraries(servo-interface PRIVATE
-                      GUI)
+                      TUI)
