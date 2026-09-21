@@ -8,7 +8,7 @@
 using namespace ftxui;
 
 TerminalApp::TerminalApp(Interface & interface)
-: interface_(interface), screen_(App::Fullscreen()), interfaceIndex_(0), selectedAddress_(0)
+: interface_(interface), screen_(App::Fullscreen()), interfaceIndex_(0), selectedAddress_(0), selectedController_(0)
 {
   constexpr auto connectionNamesArray = magic_enum::enum_names<ConnectionType>();
   std::vector<std::string> connectionNames{connectionNamesArray.begin(), connectionNamesArray.end()};
@@ -57,7 +57,7 @@ TerminalApp::TerminalApp(Interface & interface)
                            startServoUpdateThread();
                          });
 
-  connectionPanel_ = Renderer(
+  connectionPanelRenderer_ = Renderer(
       [&]
       {
         if(!interface_.connected())
@@ -94,18 +94,15 @@ TerminalApp::TerminalApp(Interface & interface)
         {
         }
 
-        return window(text("Connection"), hbox({
-                                              vbox({
-                                                  text("Connected : " + status),
-                                                  separator(),
-                                                  disconnectButton_->Render() | flex,
-                                              }),
-                                              separator(),
-                                              searchButton_->Render() | flex,
-                                          }));
+        return window(text("Connection"), hbox({vbox({
+                                                    text("Connected : " + status),
+                                                    separator(),
+                                                    disconnectButton_->Render() | flex,
+                                                }),
+                                                separator(), searchButton_->Render()}));
       });
 
-  servoPanel_ = Renderer(
+  servoPanelRenderer_ = Renderer(
       [&]
       {
         if(!interface_.connected())
@@ -147,42 +144,48 @@ TerminalApp::TerminalApp(Interface & interface)
         servoInfoTable.SelectRow(0).SeparatorVertical(LIGHT);
         servoInfoTable.SelectRow(0).Border(DOUBLE);
 
-        return window(text("Servos"), servoInfoTable.Render() | flex);
+        return window(text("Servos"), servoInfoTable.Render());
       });
 
-  mainContainer_ = Container::Vertical({
-      Container::Horizontal({
-          connectionSelector_,
-          addressSelector_,
-          connectButton_,
-          disconnectButton_,
-          searchButton_,
-      }),
+  // Selector between available controller types
+  constexpr auto controllerNamesArray = magic_enum::enum_names<ControllerType>();
+  std::vector<std::string> controllerNames{controllerNamesArray.begin(), controllerNamesArray.end()};
+  controllerSelector_ = Dropdown(controllerNames, &selectedController_);
+
+  // Controller buttons
+  startControlButton_ =
+      ftxui::Button("Start controller", [&] { createController(static_cast<ControllerType>(selectedController_)); });
+  stopControlButton_ = ftxui::Button("Stop controller", [&] { detachController(); });
+
+  // Initialize controller panel with controller selector and start button
+  controllerContainer_ = ftxui::Container::Vertical({
+      controllerSelector_,
+      startControlButton_,
   });
+  controllerPanelRenderer_ =
+      Renderer(controllerContainer_, [&] { return window(text("Controller"), controllerContainer_->Render()); });
 
-  mainRenderer_ = Renderer(mainContainer_,
-                           [&]
-                           {
-                             return vbox({
-                                 connectionPanel_->Render(),
-                                 separator(),
-                                 servoPanel_->Render(),
-                             });
-                           });
+  // Having everything in a container handles interaction and focus of the elements
+  // Basically only putting interactive elements here, output only elements don't need focus
+  // @todo put components in connectionContainer_, make the container child of the renderer, and put only renderers in
+  // mainContainer_ to keep display and processing consistent in case of add and detach of components
+  mainContainer_ = Container::Vertical({Container::Horizontal({
+                                            connectionSelector_,
+                                            addressSelector_,
+                                            connectButton_,
+                                            disconnectButton_,
+                                            searchButton_,
+                                        }),
+                                        controllerPanelRenderer_});
 
-  // mainRenderer_ = Renderer([&] {
-  //   return vbox({
-  //       hbox({
-  //           window(vbox({
-  //               connectionPanel_->Render(),
-  //           }), hflex),
-  //           separatorVertical(),
-  //           window(vbox({
-  //               servoPanel_->Render(),
-  //           }), hflex),
-  //       }),
-  //   });
-  // });
+  // Then the renderer handles the actual layout
+  mainRenderer_ = Renderer(
+      mainContainer_,
+      [&]
+      {
+        return vbox({connectionPanelRenderer_->Render(), separator(),
+                     hbox({servoPanelRenderer_->Render(), separator(), controllerPanelRenderer_->Render() | flex})});
+      });
 }
 
 void TerminalApp::startRendering()
@@ -226,4 +229,62 @@ void TerminalApp::stopServoUpdateThread()
   // Set the jthread stop token
   servoDataUpdater_.request_stop();
   servoDataUpdater_.join();
+}
+
+void TerminalApp::createController(ControllerType type)
+{
+  // request controller backend creation
+  interface_.setupController(type);
+  // reset panel container elements
+  controllerContainer_->DetachAllChildren();
+  // add stop button at the top
+  controllerContainer_->Add(stopControlButton_);
+  // create panel depending on controller type
+  switch(type)
+  {
+    case ControllerType::Manual:
+    {
+      // Manual controller adds sliders to control servo position directly
+      sliderVals_.clear();
+      // reserving so that the .back() values given as refs do not move
+      sliderVals_.reserve(interface_.getServoIds().size());
+      // separate index to keep track of place in the sliderVals_ vector
+      size_t index = 0;
+      std::lock_guard<std::mutex> lock(servoMapMutex_);
+      for(const auto & [id, servoData] : servoMap_)
+      {
+        sliderVals_.emplace_back(servoData.position);
+        SliderOption<double> option;
+        option.value = &sliderVals_.back();
+        // @fixme hardcoded 12 bit definition for the feetech servos, do it from min max params of the servo instead
+        // @todo make it generic by just setting from 0 - 1 and then scale it correctly in the manual controller
+        option.min = -M_PI + 2. * M_PI / 4096;
+        option.max = M_PI - 2. * M_PI / 4096;
+        option.increment = 2. * M_PI / 4096;
+        // For the manual controller we don't need to actually implement a controller, just trigger a hardware command
+        // update when the sliders are updated.
+        int servoId = id;
+        option.on_change = [this, servoId, index]
+        {
+          // @fixme why does putting a target set servo on automatically with feetech servos?
+          interface_.setServoTarget(servoId, sliderVals_[index]);
+        };
+        controllerContainer_->Add(ftxui::Slider<double>(option));
+        index++;
+      }
+      break;
+    }
+    case ControllerType::External:
+      controllerContainer_->Add(ftxui::Renderer([] { return ftxui::text("External controller"); }));
+      break;
+  }
+}
+
+void TerminalApp::detachController()
+{
+  // interface_.stopController();
+  // reset to controller choice
+  controllerContainer_->DetachAllChildren();
+  controllerContainer_->Add(controllerSelector_);
+  controllerContainer_->Add(startControlButton_);
 }
