@@ -1,6 +1,6 @@
 #include "controller_factory.h"
+#include "external.h"
 #include "manual.h"
-#include "mc_rtc/mc_controller.h"
 
 std::unique_ptr<ControllerInterface> setupControllerType(ControllerType type)
 {
@@ -8,8 +8,8 @@ std::unique_ptr<ControllerInterface> setupControllerType(ControllerType type)
   {
     case ControllerType::Manual:
       return std::make_unique<ManualController>();
-    case ControllerType::MC_RTC:
-      return std::make_unique<MCController>();
+    case ControllerType::External:
+      return std::make_unique<ExternalController>();
     default:
       return nullptr;
   }

@@ -77,6 +77,7 @@ target_link_libraries(Hardware PUBLIC
 add_library(Controller
             src/controller/controller_factory.cpp
             src/controller/manual.cpp
+            src/controller/external.cpp
             src/controller/mc_rtc/mc_controller.cpp)
             # XXX how to handle conditional include of mc_rtc ?
 target_include_directories(Controller PUBLIC
