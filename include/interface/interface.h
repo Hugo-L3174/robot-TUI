@@ -56,6 +56,14 @@ public:
   void setupController(ControllerType type);
 
   bool setServoTarget(int id, double targetPos, double targetVel = 0., double targetAcc = 0.);
+  bool setServoTargets(const std::vector<int> & ids, const std::vector<double> & targetsPos);
+  bool setServoTargets(const std::vector<int> & ids,
+                       const std::vector<double> & targetsPos,
+                       const std::vector<double> & targetsVel);
+  bool setServoTargets(const std::vector<int> & ids,
+                       const std::vector<double> & targetsPos,
+                       const std::vector<double> & targetsVel,
+                       const std::vector<double> & targetsAcc);
 
   bool setServoGains(int id, double P, double D, double I);
 
