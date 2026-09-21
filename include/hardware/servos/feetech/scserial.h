@@ -67,7 +67,21 @@ public:
   }
 
   void write_buf(uint8_t id, uint8_t mem_addr, uint8_t * n_dat, uint8_t n_len, uint8_t fun);
+  /**
+   * @brief host to scs format: split a 16bit value to two 8bit values to handle endianness
+   *
+   * @param data_l ptr to store low byte
+   * @param data_h ptr to store high byte
+   * @param data data to be split
+   */
   void host_2_scs(uint8_t * data_l, uint8_t * data_h, uint16_t data);
+  /**
+   * @brief scs to host format: combine two 8bit vals into one 16bit
+   *
+   * @param data_l low byte
+   * @param data_h high byte
+   * @return uint16_t value
+   */
   uint16_t scs_2_host(uint8_t data_l, uint8_t data_h);
   int ask(uint8_t id);
   int check_head();

@@ -78,12 +78,18 @@ public:
       Position = -Position;
       Position |= (1 << 15);
     }
+    // prepare buffer for full command
     uint8_t bBuf[7];
+    // SMS_STS_ACC is first adress
     bBuf[0] = ACC;
+    // then position over two bytes
     scserial_->host_2_scs(bBuf + 1, bBuf + 2, Position);
+    // then goal time over two bytes (ignored)
     scserial_->host_2_scs(bBuf + 3, bBuf + 4, 0);
+    // then speed over two bytes
     scserial_->host_2_scs(bBuf + 5, bBuf + 6, Speed);
 
+    // write full buffer in servo memory starting from SMS_STS_ACC memory offset
     return scserial_->gen_write(ID, SMS_STS_ACC, bBuf, 7);
   }
 
@@ -192,6 +198,11 @@ public:
   int calibration_offset(uint8_t ID)
   {
     return scserial_->write_byte(ID, SMS_STS_TORQUE_ENABLE, 128);
+  }
+
+  int calibration_offset(uint8_t ID, int16_t offset)
+  {
+    return scserial_->write_word(ID, SMS_STS_OFS_L, offset);
   }
 
   // Set gains without unlocking eeprom, changes will not be kept after power off
