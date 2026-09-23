@@ -6,16 +6,16 @@ SimulatedServos::SimulatedServos()
 {
   std::random_device rd;
   randGen_ = std::mt19937(rd());
+}
+
+bool SimulatedServos::openLink(const std::string & device)
+{
   for(int i = 1; i < 7; i++)
   {
     // Only initializing non default arguments
     ServoInfo dummy{.id = i, .voltage = 7.8, .temperature = 30., .servoGains = {.kp = 10., .kd = 6.32}};
     dummyServos_.emplace(i, dummy);
   }
-}
-
-bool SimulatedServos::openLink(const std::string & device)
-{
   startServoUpdateThread();
   return true;
 }
@@ -23,6 +23,7 @@ bool SimulatedServos::openLink(const std::string & device)
 bool SimulatedServos::closeLink()
 {
   stopServoUpdateThread();
+  dummyServos_.clear();
   return true;
 }
 
@@ -65,6 +66,10 @@ void SimulatedServos::simulateDummyServoUpdate(ServoInfo & dummyData)
   {
     dummyData.velocity += commandAcc * 0.01;
     dummyData.position += dummyData.velocity * 0.01; // semi implicit euler
+  }
+  else
+  {
+    dummyData.velocity = 0.;
   }
 }
 
