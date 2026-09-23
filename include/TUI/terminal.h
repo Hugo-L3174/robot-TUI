@@ -45,6 +45,8 @@ private:
   ftxui::Component connectButton_;
   ftxui::Component disconnectButton_;
   ftxui::Component searchButton_;
+  ftxui::Component servoOnButton_;
+  ftxui::Component servoOffButton_;
 
   /********** Servo data panel **********/
   ftxui::Component servoPanelRenderer_;

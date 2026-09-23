@@ -109,6 +109,11 @@ bool Interface::setServoGains(int id, double P, double D, double I)
   return servoHardware_->setServoGains(id, P, D, I);
 }
 
+bool Interface::setServoOn(int id, bool activate)
+{
+  return servoHardware_->servoOn(id, activate);
+}
+
 void Interface::setupServos(MotorType type)
 {
   servoHardware_ = setupServoType(type);

@@ -67,6 +67,8 @@ public:
 
   bool setServoGains(int id, double P, double D, double I);
 
+  bool setServoOn(int id, bool activate);
+
   // @todo this is a single value now but might want to have a vector
   // and servos would be a map with the connection link or robot as key?
   // In case single controller with different connections (multi-robot)

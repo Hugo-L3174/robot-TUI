@@ -57,6 +57,23 @@ TerminalApp::TerminalApp(Interface & interface)
                            startServoUpdateThread();
                          });
 
+  servoOnButton_ = Button("Servos ON",
+                          [&]
+                          {
+                            for(const auto & id : interface_.getServoIds())
+                            {
+                              interface_.setServoOn(id, true);
+                            }
+                          });
+  servoOffButton_ = Button("Servos OFF",
+                           [&]
+                           {
+                             for(const auto & id : interface_.getServoIds())
+                             {
+                               interface_.setServoOn(id, false);
+                             }
+                           });
+
   connectionPanelRenderer_ = Renderer(
       [&]
       {
@@ -99,7 +116,8 @@ TerminalApp::TerminalApp(Interface & interface)
                                                     separator(),
                                                     disconnectButton_->Render() | flex,
                                                 }),
-                                                separator(), searchButton_->Render()}));
+                                                separator(), searchButton_->Render(), separator(),
+                                                servoOnButton_->Render(), separator(), servoOffButton_->Render()}));
       });
 
   servoPanelRenderer_ = Renderer(
@@ -129,7 +147,7 @@ TerminalApp::TerminalApp(Interface & interface)
 							fmt::format("{:.5f}", servoData.position),
               fmt::format("{:.5f}", servoData.servoTargets.pos),
               fmt::format("{:.5f}", servoData.velocity),
-              servoData.torque ? "ON" : "OFF"
+              servoData.torqueEnabled ? "ON" : "OFF"
 						}
 					);
           // clang-format on
@@ -169,14 +187,10 @@ TerminalApp::TerminalApp(Interface & interface)
   // Basically only putting interactive elements here, output only elements don't need focus
   // @todo put components in connectionContainer_, make the container child of the renderer, and put only renderers in
   // mainContainer_ to keep display and processing consistent in case of add and detach of components
-  mainContainer_ = Container::Vertical({Container::Horizontal({
-                                            connectionSelector_,
-                                            addressSelector_,
-                                            connectButton_,
-                                            disconnectButton_,
-                                            searchButton_,
-                                        }),
-                                        controllerPanelRenderer_});
+  mainContainer_ =
+      Container::Vertical({Container::Horizontal({connectionSelector_, addressSelector_, connectButton_,
+                                                  disconnectButton_, searchButton_, servoOnButton_, servoOffButton_}),
+                           controllerPanelRenderer_});
 
   // Then the renderer handles the actual layout
   mainRenderer_ = Renderer(
