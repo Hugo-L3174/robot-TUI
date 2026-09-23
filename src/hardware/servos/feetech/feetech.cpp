@@ -107,8 +107,10 @@ int FeetechServos::velTargetToServo(const double & velTarget)
   const double unitStep = 2. * M_PI / 4096;
   // target vel needs to be converted to int 0~3400 for target speed in unitStep/s
   // the value has to be unsigned, the firmware automatically signs it according to the position error
-  // also clamping starting at 1 because 0 is not zero velocity but maximum velocity
-  int speed = std::clamp(static_cast<int>(std::abs(velTarget * unitStep)), 1, 3400);
+  // @fixme implement an offset so that over 3400 the speed target is 0 -> max
+  // then a target speed of 0 will be value of 1
+  // @note value zero is maximum speed according to feetech hardware !
+  int speed = std::clamp(static_cast<int>(std::abs(velTarget * unitStep)), 0, 3400);
   return speed;
 }
 
