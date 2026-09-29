@@ -6,7 +6,8 @@
 enum class ControllerType
 {
   Manual,
-  MC_RTC,
+  mc_rtc,
+  External
 };
 
 std::unique_ptr<ControllerInterface> setupControllerType(ControllerType type);

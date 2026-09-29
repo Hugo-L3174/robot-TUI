@@ -8,6 +8,7 @@
 
 #include "interface.h"
 // for controllers enum
+#include "connection/external_connection.h"
 #include "controller_factory.h"
 
 class TerminalApp
@@ -62,7 +63,9 @@ private:
   ftxui::Component controllerPanelRenderer_;
 
   int selectedController_;
+  int selectedExternalConnection_;
   ftxui::Component controllerSelector_;
+  ftxui::Component externalConnectionSelector_;
   ftxui::Component startControlButton_;
   ftxui::Component stopControlButton_;
 

@@ -170,6 +170,13 @@ TerminalApp::TerminalApp(Interface & interface)
   std::vector<std::string> controllerNames{controllerNamesArray.begin(), controllerNamesArray.end()};
   controllerSelector_ = Dropdown(controllerNames, &selectedController_);
 
+  // Subtype selection for external controller
+  constexpr auto externalConnectionsArray = magic_enum::enum_names<ExternalConnectionType>();
+  std::vector<std::string> externalConnections = {externalConnectionsArray.begin(), externalConnectionsArray.end()};
+  externalConnectionSelector_ =
+      Radiobox(externalConnections, &selectedExternalConnection_) | border
+      | Maybe([&] { return static_cast<ControllerType>(selectedController_) == ControllerType::External; });
+
   // Controller buttons
   startControlButton_ =
       ftxui::Button("Start controller", [&] { createController(static_cast<ControllerType>(selectedController_)); });
@@ -178,6 +185,7 @@ TerminalApp::TerminalApp(Interface & interface)
   // Initialize controller panel with controller selector and start button
   controllerContainer_ = ftxui::Container::Vertical({
       controllerSelector_,
+      externalConnectionSelector_,
       startControlButton_,
   });
   controllerPanelRenderer_ =

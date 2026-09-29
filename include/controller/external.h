@@ -1,4 +1,5 @@
 #pragma once
+#include "connection/external_connection.h"
 #include "controllers.h"
 
 /**
