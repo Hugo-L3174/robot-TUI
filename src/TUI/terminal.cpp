@@ -22,6 +22,7 @@ TerminalApp::TerminalApp(Interface & interface)
   connectButton_ = Button("Connect",
                           [&]
                           {
+                            stopServoUpdateThread();
                             if(interfaceIndex_ == 0)
                             {
                               interface_.connectionType_ = ConnectionType::Serial;
@@ -31,6 +32,13 @@ TerminalApp::TerminalApp(Interface & interface)
                             {
                               // @todo
                             }
+                            // Resetting and refilling servo map
+                            servoMap_.clear();
+                            for(const auto & id : interface_.getServoIds())
+                            {
+                              servoMap_.emplace(id, interface_.getServoData(id));
+                            }
+                            startServoUpdateThread();
                           });
 
   // @todo can this be greyed out when a controller is running ?
@@ -41,21 +49,6 @@ TerminalApp::TerminalApp(Interface & interface)
                                interface_.disconnect();
                                servoMap_.clear();
                              });
-
-  // @todo should be greyed out or removed during control
-  searchButton_ = Button("Search",
-                         [&]
-                         {
-                           stopServoUpdateThread();
-                           interface_.detectServos();
-                           // Resetting and refilling servo map
-                           servoMap_.clear();
-                           for(const auto & id : interface_.getServoIds())
-                           {
-                             servoMap_.emplace(id, interface_.getServoData(id));
-                           }
-                           startServoUpdateThread();
-                         });
 
   servoOnButton_ = Button("Servos ON",
                           [&]
@@ -111,13 +104,13 @@ TerminalApp::TerminalApp(Interface & interface)
         {
         }
 
-        return window(text("Connection"), hbox({vbox({
-                                                    text("Connected : " + status),
-                                                    separator(),
-                                                    disconnectButton_->Render() | flex,
-                                                }),
-                                                separator(), searchButton_->Render(), separator(),
-                                                servoOnButton_->Render(), separator(), servoOffButton_->Render()}));
+        return window(text("Connection"),
+                      hbox({vbox({
+                                text("Connected : " + status),
+                                separator(),
+                                disconnectButton_->Render() | flex,
+                            }),
+                            separator(), servoOnButton_->Render(), separator(), servoOffButton_->Render()}));
       });
 
   servoPanelRenderer_ = Renderer(
@@ -195,10 +188,9 @@ TerminalApp::TerminalApp(Interface & interface)
   // Basically only putting interactive elements here, output only elements don't need focus
   // @todo put components in connectionContainer_, make the container child of the renderer, and put only renderers in
   // mainContainer_ to keep display and processing consistent in case of add and detach of components
-  mainContainer_ =
-      Container::Vertical({Container::Horizontal({connectionSelector_, addressSelector_, connectButton_,
-                                                  disconnectButton_, searchButton_, servoOnButton_, servoOffButton_}),
-                           controllerPanelRenderer_});
+  mainContainer_ = Container::Vertical({Container::Horizontal({connectionSelector_, addressSelector_, connectButton_,
+                                                               disconnectButton_, servoOnButton_, servoOffButton_}),
+                                        controllerPanelRenderer_});
 
   // Then the renderer handles the actual layout
   mainRenderer_ = Renderer(
@@ -297,14 +289,18 @@ void TerminalApp::createController(ControllerType type)
       break;
     }
     case ControllerType::External:
+      // @todo implement scrollable panel with stream display that can be passed to the interface
       controllerContainer_->Add(ftxui::Renderer([] { return ftxui::text("External controller"); }));
       break;
   }
+  // Start controller
+  // @todo pass stream or sink by ref for display
+  interface_.startController();
 }
 
 void TerminalApp::detachController()
 {
-  // interface_.stopController();
+  interface_.stopController();
   // reset to controller choice
   controllerContainer_->DetachAllChildren();
   controllerContainer_->Add(controllerSelector_);

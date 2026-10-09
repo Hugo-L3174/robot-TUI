@@ -45,7 +45,6 @@ private:
   ftxui::Component addressSelector_;
   ftxui::Component connectButton_;
   ftxui::Component disconnectButton_;
-  ftxui::Component searchButton_;
   ftxui::Component servoOnButton_;
   ftxui::Component servoOffButton_;
 
