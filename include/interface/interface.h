@@ -66,18 +66,18 @@ public:
   // Factory to build the correct type of Controller
   void setupController(ControllerType type);
 
-  bool setServoTarget(int id, double targetPos, double targetVel = 0., double targetAcc = 0.);
-  bool setServoTargets(const std::vector<int> & ids, const std::vector<double> & targetsPos);
-  bool setServoTargets(const std::vector<int> & ids,
+  void setServoTarget(int id, double targetPos, double targetVel = 0., double targetAcc = 0.);
+  void setServoTargets(const std::vector<int> & ids, const std::vector<double> & targetsPos);
+  void setServoTargets(const std::vector<int> & ids,
                        const std::vector<double> & targetsPos,
                        const std::vector<double> & targetsVel);
-  bool setServoTargets(const std::vector<int> & ids,
+  void setServoTargets(const std::vector<int> & ids,
                        const std::vector<double> & targetsPos,
                        const std::vector<double> & targetsVel,
                        const std::vector<double> & targetsAcc);
   // @todo add another setServo that takes a vector of commands directly
 
-  bool setServoGains(int id, double P, double D, double I);
+  void setServoGains(int id, double P, double D, double I);
 
   bool setServoOn(int id, bool activate);
 

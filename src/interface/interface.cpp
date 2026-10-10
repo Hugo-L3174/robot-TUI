@@ -24,11 +24,15 @@ void Interface::connect(const std::string & device)
     controllerCommands_.clear();
     for(const auto & id : servoIds_)
     {
-      motorStates_.emplace_back(getServoData(id));
+      // First initialization calls hardware directly
+      motorStates_.emplace_back(servoHardware_->getServoData(id));
       controllerCommands_.emplace_back(motorStates_.back());
       // Set first target to current position
       controllerCommands_.back().servoTargets.pos = motorStates_.back().position;
     }
+
+    // @todo for now setting commanding_ to true directly but should be a front end option
+    commanding_ = true;
 
     // Start hardware thread
     hardwareThread_ = std::jthread(
@@ -37,27 +41,30 @@ void Interface::connect(const std::string & device)
           while(!stopToken.stop_requested())
           {
             auto start = std::chrono::high_resolution_clock::now();
-            // Get servo states and update buffer
+            // Get hardware servo states and update buffer
             {
+              // @fixme add hardware mutex lock just in case
               std::lock_guard<std::mutex> statesLock(statesMutex_);
-              getServoData(motorStates_);
+              for(auto & data : motorStates_)
+              {
+                data = servoHardware_->getServoData(data.id);
+              }
             }
 
             if(commanding_)
             {
               // Send commands to hardware
-              std::lock_guard<std::mutex> commandsLock(commandsMutex_);
               // @fixme make a better data type for targets
+              std::lock_guard<std::mutex> commandsLock(commandsMutex_);
               std::vector<int> ids;
-              std::vector<double> targetsPos, targetsVel, targetsAcc;
+              std::vector<ServoInfo::targets> targets;
               for(const auto & command : controllerCommands_)
               {
                 ids.emplace_back(command.id);
-                targetsPos.emplace_back(command.servoTargets.pos);
-                targetsVel.emplace_back(command.servoTargets.vel);
-                targetsAcc.emplace_back(command.servoTargets.acc);
+                targets.emplace_back(command.servoTargets);
               }
-              setServoTargets(ids, targetsPos, targetsVel, targetsAcc);
+              // @fixme add hardware mutex lock just in case
+              servoHardware_->setServoTargets(ids, targets);
             }
 
             auto end = std::chrono::high_resolution_clock::now();
@@ -74,6 +81,7 @@ void Interface::connect(const std::string & device)
 
 void Interface::disconnect()
 {
+  commanding_ = false;
   if(hardwareThread_.joinable())
   {
     // Set the jthread stop token
@@ -146,96 +154,99 @@ void Interface::detectServos()
   servoIds_ = servoHardware_->detectServos();
 }
 
-// @fixme this should set the state buffer instead of a direct hardware call
 ServoInfo Interface::getServoData(int id)
 {
-  return servoHardware_->getServoData(id);
+  std::lock_guard<std::mutex> statesLock(statesMutex_);
+  for(const auto & data : motorStates_)
+  {
+    if(id == data.id)
+    {
+      return data;
+    }
+  }
+  // if not found return default constructor
+  return ServoInfo{};
 }
 
-// @fixme this should set the state buffer instead of a direct hardware call
 std::vector<ServoInfo> Interface::getServoData()
 {
-  std::vector<ServoInfo> buffer;
-  for(const auto & id : servoIds_)
-  {
-    buffer.emplace_back(servoHardware_->getServoData(id));
-  }
-  return buffer;
+  std::lock_guard<std::mutex> statesLock(statesMutex_);
+  return motorStates_;
 }
 
-// @fixme this should set the state buffer instead of a direct hardware call
 void Interface::getServoData(std::vector<ServoInfo> & dataBuffer)
 {
-  for(auto & data : dataBuffer)
+  std::lock_guard<std::mutex> statesLock(statesMutex_);
+  dataBuffer = motorStates_;
+}
+
+void Interface::setServoTarget(int id, double targetPos, double targetVel, double targetAcc)
+{
+  std::lock_guard<std::mutex> commandsLock(commandsMutex_);
+  for(auto & command : controllerCommands_)
   {
-    data = servoHardware_->getServoData(data.id);
+    if(id == command.id)
+    {
+      command.servoTargets = ServoInfo::targets{.pos = targetPos, .vel = targetVel, .acc = targetAcc};
+      break;
+    }
   }
 }
 
-// @fixme this should set the command buffer instead of a direct hardware call
-bool Interface::setServoTarget(int id, double targetPos, double targetVel, double targetAcc)
-{
-  ServoInfo::targets servoTarget{.pos = targetPos, .vel = targetVel, .acc = targetAcc};
-  return servoHardware_->setServoTarget(id, servoTarget);
-}
-
-// @fixme this should set the command buffer instead of a direct hardware call
-bool Interface::setServoTargets(const std::vector<int> & ids, const std::vector<double> & targetsPos)
+void Interface::setServoTargets(const std::vector<int> & ids, const std::vector<double> & targetsPos)
 {
   // If no target vel or acc passed, target zero
   // @fixme should we really target zero ? ok for acceleration but check hardware implementations of zero vel.
   // might make incoherent objective
   std::vector<double> targetsVel(ids.size()), targetsAcc(ids.size());
-
   return setServoTargets(ids, targetsPos, targetsVel, targetsAcc);
 }
 
-// @fixme this should set the command buffer instead of a direct hardware call
-bool Interface::setServoTargets(const std::vector<int> & ids,
+void Interface::setServoTargets(const std::vector<int> & ids,
                                 const std::vector<double> & targetsPos,
                                 const std::vector<double> & targetsVel)
 {
   // If no target acc passed, target zero
   std::vector<double> targetsAcc(ids.size());
-
   return setServoTargets(ids, targetsPos, targetsVel, targetsAcc);
 }
 
-// @fixme this should set the command buffer instead of a direct hardware call
-bool Interface::setServoTargets(const std::vector<int> & ids,
+void Interface::setServoTargets(const std::vector<int> & ids,
                                 const std::vector<double> & targetsPos,
                                 const std::vector<double> & targetsVel,
                                 const std::vector<double> & targetsAcc)
 {
-  // Build servo targets using std::views
-  // Yes, a for loop is probably just as efficient as there are no complex operations
-  // In c++23 this could be done easily using std::views::zip
-
-  // create lazy range of the target vectors
-  auto indices = std::views::iota(std::size_t{0}, ids.size());
-  // lazy transform
-  auto targetView = indices
-                    | std::views::transform(
-                        [&](size_t i) noexcept {
-                          return ServoInfo::targets{.pos = targetsPos[i], .vel = targetsVel[i], .acc = targetsAcc[i]};
-                        });
-
-  std::vector<ServoInfo::targets> targets;
-  targets.reserve(ids.size());
-  // fill the targets vecor (use back inserter to avoid resizing the vector which initializes default values)
-  std::ranges::copy(targetView, std::back_inserter(targets));
-
-  return servoHardware_->setServoTargets(ids, targets);
+  std::lock_guard<std::mutex> commandsLock(commandsMutex_);
+  for(size_t i = 0; i < ids.size(); i++)
+  {
+    for(auto & command : controllerCommands_)
+    {
+      if(ids[i] == command.id)
+      {
+        command.servoTargets = ServoInfo::targets{.pos = targetsPos[i], .vel = targetsVel[i], .acc = targetsAcc[i]};
+        // break out of the commands for when found
+        break;
+      }
+    }
+  }
 }
 
-// @fixme this should set the command buffer instead of a direct hardware call
-bool Interface::setServoGains(int id, double P, double D, double I)
+void Interface::setServoGains(int id, double P, double D, double I)
 {
-  return servoHardware_->setServoGains(id, P, D, I);
+  std::lock_guard<std::mutex> commandsLock(commandsMutex_);
+  for(auto & command : controllerCommands_)
+  {
+    if(id == command.id)
+    {
+      command.servoGains = ServoInfo::gains{.kp = P, .kd = D, .ki = I};
+      break;
+    }
+  }
 }
 
 bool Interface::setServoOn(int id, bool activate)
 {
+  // @fixme set on/off as part of command instead of direct hardware call
   return servoHardware_->servoOn(id, activate);
 }
 
