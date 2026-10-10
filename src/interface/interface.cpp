@@ -105,7 +105,7 @@ void Interface::startController()
           while(!stopToken.stop_requested())
           {
             auto start = std::chrono::high_resolution_clock::now();
-            controller_->runControl();
+            controller_->runControl(statesMutex_, motorStates_, commandsMutex_, controllerCommands_);
             /* @note process in mc_udp is that the server holds a vector of sensors and a vector of commands (called
             encoders and encoders velocities but from qp output) each "execute" of the server calls the server send,
             which sends the sensor data buffer to the last connected client, then checks if any control data was

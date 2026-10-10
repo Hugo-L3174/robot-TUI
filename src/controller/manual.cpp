@@ -2,11 +2,20 @@
 
 ManualController::ManualController() {}
 
-bool ManualController::runControl()
+bool ManualController::runControl(std::mutex & stateMutex,
+                                  const std::vector<ServoInfo> & states,
+                                  std::mutex & commandMutex,
+                                  std::vector<ServoInfo> & commands)
 {
   return true;
 }
 
-void ManualController::startControlThread() {}
+bool ManualController::startControl()
+{
+  return true;
+}
 
-void ManualController::stopControlThread() {}
+bool ManualController::stopControl()
+{
+  return true;
+}

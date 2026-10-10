@@ -78,10 +78,12 @@ add_library(Controller
             src/controller/controller_factory.cpp
             src/controller/manual.cpp
             src/controller/external.cpp
+            src/controller/connection/UDPServer.cpp
             src/controller/mc_rtc/mc_controller.cpp)
             # XXX how to handle conditional include of mc_rtc ?
 target_include_directories(Controller PUBLIC
-                           include/controller/)
+                           include/controller/
+                           include/hardware/)
 # target_link_libraries(Controller
 #                       mc_rtc)
 
@@ -109,9 +111,9 @@ target_link_libraries(TUI PUBLIC
                       magic_enum::magic_enum)
 
 # Main executable
-add_executable(servo-interface
+add_executable(robot-interface
                src/main.cpp)
-target_include_directories(servo-interface PRIVATE
+target_include_directories(robot-interface PRIVATE
                            include/TUI)
-target_link_libraries(servo-interface PRIVATE
+target_link_libraries(robot-interface PRIVATE
                       TUI)

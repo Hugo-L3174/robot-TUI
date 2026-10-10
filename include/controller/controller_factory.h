@@ -10,4 +10,4 @@ enum class ControllerType
   External
 };
 
-std::unique_ptr<ControllerInterface> setupControllerType(ControllerType type);
+std::unique_ptr<ControllerInterface> setupControllerType(ControllerType type, const ControllerConfig & config);

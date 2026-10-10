@@ -13,9 +13,12 @@ class ManualController : public ControllerInterface
 public:
   ManualController();
 
-  bool runControl() override;
-  void startControlThread() override;
-  void stopControlThread() override;
+  bool runControl(std::mutex & stateMutex,
+                  const std::vector<ServoInfo> & states,
+                  std::mutex & commandMutex,
+                  std::vector<ServoInfo> & commands) override;
+  bool startControl() override;
+  bool stopControl() override;
 
 private:
 };
