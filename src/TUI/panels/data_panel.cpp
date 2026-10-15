@@ -8,6 +8,12 @@ using namespace Panels;
 DataPanel::DataPanel(Interface & interface, ftxui::App & screen) : TerminalPanel(interface, screen)
 {
   buildRenderer();
+  startServoUpdateThread();
+}
+
+DataPanel::~DataPanel()
+{
+  stopServoUpdateThread();
 }
 
 void DataPanel::buildContainer()

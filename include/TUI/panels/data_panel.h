@@ -10,6 +10,8 @@ class DataPanel : public TerminalPanel
 {
 public:
   explicit DataPanel(Interface & interface, ftxui::App & screen);
+  ~DataPanel();
+
   void buildContainer() override;
   void buildRenderer() override;
 
