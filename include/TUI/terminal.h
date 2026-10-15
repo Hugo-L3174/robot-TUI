@@ -3,28 +3,19 @@
 #include <ftxui/component/component.hpp>
 #include <ftxui/component/screen_interactive.hpp>
 
-#include <mutex>
-#include <thread>
-
 #include "interface.h"
-// for controllers enum
-#include "connection/external_connection.h"
-#include "controller_factory.h"
+
+#include "panels/connection_panel.h"
+#include "panels/controller_panel.h"
+#include "panels/data_panel.h"
 
 class TerminalApp
 {
 public:
   explicit TerminalApp(Interface & interface);
+  ~TerminalApp();
 
   void startRendering();
-
-  void startServoUpdateThread();
-  void stopServoUpdateThread();
-
-  // Request controller creation to the interface and populate the controllerPanelRenderer_
-  void createController(ControllerType type);
-  // Stops current controller and remove panel elements
-  void detachController();
 
 private:
   Interface & interface_;
@@ -35,41 +26,13 @@ private:
   ftxui::Component mainRenderer_;
 
   /********** Connection panel **********/
-  // Container to hold the connection elements
-  ftxui::Component connectionContainer_;
-  ftxui::Component connectionPanelRenderer_;
-
-  int interfaceIndex_;
-  int selectedAddress_;
-  ftxui::Component connectionSelector_;
-  ftxui::Component addressSelector_;
-  ftxui::Component connectButton_;
-  ftxui::Component disconnectButton_;
-  ftxui::Component servoOnButton_;
-  ftxui::Component servoOffButton_;
+  std::unique_ptr<Panels::ConnectionPanel> connectionPanel_;
 
   /********** Servo data panel **********/
-  ftxui::Component servoPanelRenderer_;
-
-  // Servos data buffer for display is owned by the frontend
-  std::map<int, ServoInfo> servoMap_;
-  mutable std::mutex servoMapMutex_;
-  std::jthread servoDataUpdater_;
+  std::unique_ptr<Panels::DataPanel> dataPanel_;
 
   /********** Controller panel **********/
-  // Container to hold the controller elements
-  ftxui::Component controllerContainer_;
-  ftxui::Component controllerPanelRenderer_;
-
-  int selectedController_;
-  int selectedExternalConnection_;
-  ftxui::Component controllerSelector_;
-  ftxui::Component externalConnectionSelector_;
-  ftxui::Component startControlButton_;
-  ftxui::Component stopControlButton_;
-
-  // Manual controller slider values
-  std::vector<double> sliderVals_;
+  std::unique_ptr<Panels::ControllerPanel> controllerPanel_;
 
   // @todo add controller menu where path to a config can be passed (should be optional)
   // @todo add controller start button that calls interface with passed config

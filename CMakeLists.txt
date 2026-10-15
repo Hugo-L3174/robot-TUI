@@ -99,7 +99,10 @@ target_link_libraries(Interface PUBLIC
 
 # Front end display
 add_library(TUI
-            src/TUI/terminal.cpp)
+            src/TUI/terminal.cpp
+            src/TUI/panels/connection_panel.cpp
+            src/TUI/panels/data_panel.cpp
+            src/TUI/panels/controller_panel.cpp)
 target_include_directories(TUI PUBLIC
                            include/TUI/)
 target_link_libraries(TUI PUBLIC
