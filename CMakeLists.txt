@@ -1,6 +1,6 @@
 cmake_minimum_required (VERSION 3.22)
 
-project(servo-interface
+project(robot-TUI
   LANGUAGES CXX
   VERSION 1.0.0
 )
@@ -9,12 +9,6 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-
-# Qt related
-set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTOUIC ON)
-
-find_package(Qt5 REQUIRED COMPONENTS SerialPort)
 
 include(FetchContent)
 
@@ -70,7 +64,6 @@ add_library(Hardware
 target_include_directories(Hardware PUBLIC
                            include/hardware/)
 target_link_libraries(Hardware PUBLIC
-                      Qt::SerialPort
                       periphery)
 
 # Controller to compute commands and take sensor data
@@ -114,9 +107,9 @@ target_link_libraries(TUI PUBLIC
                       magic_enum::magic_enum)
 
 # Main executable
-add_executable(robot-interface
+add_executable(robot-TUI
                src/main.cpp)
-target_include_directories(robot-interface PRIVATE
+target_include_directories(robot-TUI PRIVATE
                            include/TUI)
-target_link_libraries(robot-interface PRIVATE
+target_link_libraries(robot-TUI PRIVATE
                       TUI)

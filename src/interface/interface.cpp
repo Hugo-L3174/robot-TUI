@@ -1,8 +1,7 @@
 #include "interface.h"
 
+#include <filesystem>
 #include <ranges>
-// temp include for testing
-#include <QSerialPortInfo>
 
 Interface::Interface() : connected_(false), hardwareTimestep_(0.005), commanding_(false)
 {
@@ -141,12 +140,66 @@ void Interface::stopController()
 void Interface::detectSerialPorts()
 {
   // @fixme should be hardware->detect
-  // for now using Qt explicitely
-  for(const auto & info : QSerialPortInfo::availablePorts())
+  std::string path = "/sys/class/tty";
+  if(std::filesystem::exists(path) && std::filesystem::is_directory(path))
   {
-    // @fixme explicitely adding /dev/ to path because qserial only returns port name
-    serialPorts_.push_back("/dev/" + info.portName().toStdString());
+    for(const auto & entry : std::filesystem::directory_iterator(path))
+    {
+      std::string name = entry.path().filename().string();
+
+      if(name.find("ttyUSB") == 0 || name.find("ttyACM") == 0 || name.find("ttyS") == 0)
+      {
+        // Check if found path is a real device if it has a device folder
+        if(std::filesystem::exists(entry.path() / "device"))
+        {
+          serialPorts_.push_back("/dev/" + name);
+        }
+      }
+    }
   }
+
+  // Sorting  of the found ports for better looking display
+  std::sort(serialPorts_.begin(), serialPorts_.end(),
+            [](const std::string & a, const std::string & b)
+            {
+              // Prioritize port types
+              auto getPriority = [](const std::string & p)
+              {
+                if(p.find("ttyUSB") != std::string::npos) return 0;
+                if(p.find("ttyACM") != std::string::npos) return 1;
+                if(p.find("ttyS") != std::string::npos) return 2;
+                return 3;
+              };
+
+              // Get index instead of alphabetical sorting
+              auto getIndex = [](const std::string & p)
+              {
+                std::string numString = "";
+                // Loop over port name and get only string part
+                for(auto it = p.rbegin(); it != p.rend(); ++it)
+                {
+                  if(std::isdigit(*it))
+                  {
+                    numString = *it + numString;
+                  }
+                  else
+                  {
+                    break;
+                  }
+                }
+                return numString.empty() ? 0 : std::stoi(numString);
+              };
+
+              int priorityA = getPriority(a);
+              int priorityB = getPriority(b);
+              // Sort by port type if different
+              if(priorityA != priorityB)
+              {
+                return priorityA < priorityB;
+              }
+              // Sort by port index if same type
+              return getIndex(a) < getIndex(b);
+            });
 }
 
 void Interface::detectServos()
