@@ -3,7 +3,7 @@
 #include "connection/external_connection.h"
 #include <magic_enum/magic_enum.hpp>
 
-using namespace Panels;
+using namespace TUI;
 
 ConnectionPanel::ConnectionPanel(Interface & interface, ftxui::App & screen)
 : TerminalPanel(interface, screen), interfaceIndex_(0), selectedAddress_(0)

@@ -3,7 +3,7 @@
 #include <fmt/format.h>
 #include <ftxui/dom/table.hpp>
 
-using namespace Panels;
+using namespace TUI;
 
 DataPanel::DataPanel(Interface & interface, ftxui::App & screen) : TerminalPanel(interface, screen)
 {

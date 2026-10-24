@@ -4,7 +4,7 @@
 #include <ftxui/component/component.hpp>
 #include <ftxui/component/screen_interactive.hpp>
 
-namespace Panels
+namespace TUI
 {
 
 class TerminalPanel
@@ -31,4 +31,4 @@ protected:
   ftxui::Component panelRenderer_;
 };
 
-} // namespace Panels
+} // namespace TUI

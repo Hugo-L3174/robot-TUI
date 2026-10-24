@@ -26,13 +26,13 @@ private:
   ftxui::Component mainRenderer_;
 
   /********** Connection panel **********/
-  std::unique_ptr<Panels::ConnectionPanel> connectionPanel_;
+  std::unique_ptr<TUI::ConnectionPanel> connectionPanel_;
 
   /********** Servo data panel **********/
-  std::unique_ptr<Panels::DataPanel> dataPanel_;
+  std::unique_ptr<TUI::DataPanel> dataPanel_;
 
   /********** Controller panel **********/
-  std::unique_ptr<Panels::ControllerPanel> controllerPanel_;
+  std::unique_ptr<TUI::ControllerPanel> controllerPanel_;
 
   // @todo add controller menu where path to a config can be passed (should be optional)
   // @todo add controller start button that calls interface with passed config

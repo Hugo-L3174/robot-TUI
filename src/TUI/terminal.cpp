@@ -4,9 +4,9 @@ using namespace ftxui;
 
 TerminalApp::TerminalApp(Interface & interface) : interface_(interface), screen_(App::Fullscreen())
 {
-  dataPanel_ = std::make_unique<Panels::DataPanel>(interface_, screen_);
-  connectionPanel_ = std::make_unique<Panels::ConnectionPanel>(interface_, screen_);
-  controllerPanel_ = std::make_unique<Panels::ControllerPanel>(interface_, screen_);
+  dataPanel_ = std::make_unique<TUI::DataPanel>(interface_, screen_);
+  connectionPanel_ = std::make_unique<TUI::ConnectionPanel>(interface_, screen_);
+  controllerPanel_ = std::make_unique<TUI::ControllerPanel>(interface_, screen_);
 
   // Having everything in a container handles interaction and focus of the elements
   // Basically only putting interactive elements here, output only elements don't need focus

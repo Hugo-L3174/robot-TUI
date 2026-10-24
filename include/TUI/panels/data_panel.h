@@ -4,7 +4,7 @@
 
 #include "servos/servos.h"
 
-namespace Panels
+namespace TUI
 {
 class DataPanel : public TerminalPanel
 {
@@ -25,4 +25,4 @@ private:
   std::jthread servoDataUpdater_;
 };
 
-} // namespace Panels
+} // namespace TUI

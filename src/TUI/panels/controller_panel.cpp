@@ -7,7 +7,7 @@
 // for M_PI
 #include <math.h>
 
-using namespace Panels;
+using namespace TUI;
 
 ControllerPanel::ControllerPanel(Interface & interface, ftxui::App & screen)
 : TerminalPanel(interface, screen), selectedController_(0), selectedExternalConnection_(0)

@@ -2,7 +2,7 @@
 
 #include "panels/panels.h"
 
-namespace Panels
+namespace TUI
 {
 class ConnectionPanel : public TerminalPanel
 {
@@ -24,4 +24,4 @@ private:
   ftxui::Component servoOffButton_;
 };
 
-} // namespace Panels
+} // namespace TUI

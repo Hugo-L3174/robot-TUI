@@ -5,7 +5,7 @@
 #include "subprocess/ProcessBuilder.hpp"
 #include "subprocess/basic_types.hpp"
 
-namespace Panels
+namespace TUI
 {
 class ControllerPanel : public TerminalPanel
 {
@@ -35,4 +35,4 @@ private:
   std::vector<double> sliderVals_;
 };
 
-} // namespace Panels
+} // namespace TUI
