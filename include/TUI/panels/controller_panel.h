@@ -1,9 +1,7 @@
 #pragma once
 
+#include "logger.h"
 #include "panels/panels.h"
-
-#include "subprocess/ProcessBuilder.hpp"
-#include "subprocess/basic_types.hpp"
 
 namespace TUI
 {
@@ -30,6 +28,8 @@ private:
   ftxui::Component externalConnectionSelector_;
   ftxui::Component startControlButton_;
   ftxui::Component stopControlButton_;
+  std::shared_ptr<Logger> controllerLog_;
+  std::shared_ptr<spdlog::logger> controllerSink_;
 
   // Manual controller slider values
   std::vector<double> sliderVals_;

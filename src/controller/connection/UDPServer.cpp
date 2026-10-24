@@ -22,7 +22,8 @@ sockaddr_in makeAddress(const std::string & address, unsigned short port)
   return result;
 }
 
-UDPServer::UDPServer(std::string bindAddress, unsigned short port) : bindAddress_(std::move(bindAddress)), port_(port)
+UDPServer::UDPServer(std::string bindAddress, unsigned short port, std::shared_ptr<spdlog::logger> logger)
+: bindAddress_(std::move(bindAddress)), port_(port), logger_(std::move(logger))
 {
 }
 
@@ -37,14 +38,29 @@ bool UDPServer::start()
   const auto address = makeAddress(bindAddress_, port_);
   // Open socket in ipv4 and udp mode
   const int fd = socket(AF_INET, SOCK_DGRAM, 0);
-  if(fd < 0) return false;
+  if(fd < 0)
+  {
+    if(logger_)
+    {
+      logger_->error("Failed to create UDP socket: {}", std::strerror(errno));
+    }
+    return false;
+  }
 
   if(bind(fd, reinterpret_cast<const sockaddr *>(&address), sizeof(address)) < 0)
   {
     close(fd);
+    if(logger_)
+    {
+      logger_->error("Failed to bind UDP server to {}:{}, {}", bindAddress_, port_, std::strerror(errno));
+    }
     return false;
   }
   socket_ = fd;
+  if(logger_)
+  {
+    logger_->info("UDP server listening on {}:{}", bindAddress_, port_);
+  }
   return true;
 }
 
@@ -55,6 +71,13 @@ bool UDPServer::stop()
     const bool closed = close(socket_) == 0;
     socket_ = -1;
     peerAddress_.clear();
+    if(!closed)
+    {
+      if(logger_)
+      {
+        logger_->error("Failed to close UDP server socket: {}", std::strerror(errno));
+      }
+    }
     return closed;
   }
   peerAddress_.clear();

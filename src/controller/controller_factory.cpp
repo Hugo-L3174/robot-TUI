@@ -2,7 +2,9 @@
 #include "external.h"
 #include "manual.h"
 
-std::unique_ptr<ControllerInterface> setupControllerType(ControllerType type, const ControllerConfig & config)
+std::unique_ptr<ControllerInterface> setupControllerType(ControllerType type,
+                                                         const ControllerConfig & config,
+                                                         std::shared_ptr<spdlog::logger> logger)
 {
   switch(type)
   {
@@ -24,7 +26,7 @@ std::unique_ptr<ControllerInterface> setupControllerType(ControllerType type, co
 
       // @fixme for now explicitely building an external controller config to avoid downcasting issues
       ExternalControllerConfig externalConfig;
-      return std::make_unique<ExternalController>(externalConfig);
+      return std::make_unique<ExternalController>(externalConfig, std::move(logger));
     }
     default:
       return nullptr;

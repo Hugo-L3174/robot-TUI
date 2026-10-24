@@ -309,7 +309,9 @@ void Interface::setupServos(MotorType type)
   // @fixme alert on nullptr
 }
 
-void Interface::setupController(ControllerType type, const ControllerConfig & config)
+void Interface::setupController(ControllerType type,
+                                const ControllerConfig & config,
+                                std::shared_ptr<spdlog::logger> logger)
 {
-  controller_ = setupControllerType(type, config);
+  controller_ = setupControllerType(type, config, std::move(logger));
 }

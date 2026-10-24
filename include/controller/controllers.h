@@ -1,9 +1,13 @@
 #pragma once
 
 #include "servos/servos.h"
+#include <memory>
 #include <mutex>
 #include <string>
+#include <utility>
 #include <vector>
+
+#include <spdlog/logger.h>
 
 struct RobotConfig
 {
@@ -21,6 +25,11 @@ struct ControllerConfig
 class ControllerInterface
 {
 public:
+  ControllerInterface() = default;
+  explicit ControllerInterface(const ControllerConfig & config, std::shared_ptr<spdlog::logger> logger = {})
+  : config_(config), logger_(std::move(logger))
+  {
+  }
   virtual ~ControllerInterface() = default;
 
   virtual bool runControl(std::mutex & stateMutex,
@@ -36,4 +45,6 @@ public:
 
 protected:
   ControllerConfig config_;
+  // logger for controller and its lower level components
+  std::shared_ptr<spdlog::logger> logger_;
 };

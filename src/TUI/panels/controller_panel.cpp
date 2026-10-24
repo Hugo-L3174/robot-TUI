@@ -40,6 +40,11 @@ void ControllerPanel::buildContainer()
       ftxui::Button("Start controller", [&] { createController(static_cast<ControllerType>(selectedController_)); });
   stopControlButton_ = ftxui::Button("Stop controller", [&] { detachController(); });
 
+  // Logger (not added to container yet, depends on controller type)
+  controllerLog_ = std::make_shared<Logger>(1000, [this] { screen_.PostEvent(ftxui::Event::Custom); });
+  // Create sink to logger for this panel, to be passed to controller elements
+  controllerSink_ = makeLoggerSink(controllerLog_);
+
   // Initialize controller panel with controller selector and start button
   panelContainer_ = ftxui::Container::Vertical({
       controllerSelector_,
@@ -56,9 +61,6 @@ void ControllerPanel::buildRenderer()
 
 void ControllerPanel::createController(ControllerType type)
 {
-  // request controller backend creation
-  // @fixme pass a controller config
-  interface_.setupController(type);
   // reset panel container elements
   panelContainer_->DetachAllChildren();
   // add stop button at the top
@@ -100,12 +102,17 @@ void ControllerPanel::createController(ControllerType type)
       break;
     }
     case ControllerType::External:
-      // @todo implement scrollable panel with stream display that can be passed to the interface
-      panelContainer_->Add(ftxui::Renderer([] { return ftxui::text("External controller"); }));
+      // @todo make a window and display controller type on top
+      panelContainer_->Add(controllerLog_);
+      break;
+    case ControllerType::mc_rtc:
+      panelContainer_->Add(controllerLog_);
       break;
   }
+
+  // pass logger sink to controller layer
+  interface_.setupController(type, ControllerConfig{}, controllerSink_);
   // Start controller
-  // @todo pass stream or sink by ref for display
   interface_.startController();
 }
 

@@ -64,7 +64,9 @@ public:
   void setupServos(MotorType type);
 
   // Factory to build the correct type of Controller
-  void setupController(ControllerType type, const ControllerConfig & config = ControllerConfig{});
+  void setupController(ControllerType type,
+                       const ControllerConfig & config = ControllerConfig{},
+                       std::shared_ptr<spdlog::logger> logger = {});
 
   void setServoTarget(int id, double targetPos, double targetVel = 0., double targetAcc = 0.);
   void setServoTargets(const std::vector<int> & ids, const std::vector<double> & targetsPos);

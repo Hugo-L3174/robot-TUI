@@ -5,11 +5,13 @@
 #include <string>
 #include <vector>
 
+#include <spdlog/logger.h>
+
 // UDP transport class to receive commands and send states
 class UDPServer
 {
 public:
-  UDPServer(std::string bindAddress, unsigned short port);
+  UDPServer(std::string bindAddress, unsigned short port, std::shared_ptr<spdlog::logger> logger = {});
   ~UDPServer();
 
   // Start the server and bind the address and port passed at construction
@@ -26,6 +28,7 @@ public:
 private:
   std::string bindAddress_;
   unsigned short port_;
+  std::shared_ptr<spdlog::logger> logger_;
   int socket_ = -1;
   // Address of last connected peer to send back state data
   std::vector<std::uint8_t> peerAddress_;

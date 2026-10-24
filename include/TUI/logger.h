@@ -2,11 +2,18 @@
 
 #include <algorithm>
 #include <deque>
+#include <functional>
+#include <memory>
 #include <mutex>
 #include <optional>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
+
+#include <spdlog/logger.h>
+#include <spdlog/sinks/base_sink.h>
+#include <spdlog/spdlog.h>
 
 #include <ftxui/component/component_base.hpp>
 #include <ftxui/component/event.hpp>
@@ -222,6 +229,7 @@ public:
       }
     }
 
+    // @fixme this should wrap with terminal, see in ftxui examples
     // The reflected box is used for checking if actions happened on this
     return ftxui::vbox(std::move(rows)) | ftxui::vscroll_indicator | ftxui::yframe
            | ftxui::size(ftxui::HEIGHT, ftxui::LESS_THAN, 12) | ftxui::reflect(box_);
@@ -332,5 +340,51 @@ private:
   // rendered space of this logger (used to check if events happen on it)
   ftxui::Box box_;
 };
+
+// A separate logger sink that routes its output to the given TUI component for display
+class LoggerSink : public spdlog::sinks::base_sink<std::mutex>
+{
+public:
+  explicit LoggerSink(std::weak_ptr<Logger> logger) : logger_(std::move(logger)) {}
+
+protected:
+  // sink function override to append message to logger component
+  void sink_it_(const spdlog::details::log_msg & message) override
+  {
+    if(const auto logger = logger_.lock())
+    {
+      logger->append(std::string_view(message.payload.data(), message.payload.size()), toTuiLevel(message.level));
+    }
+  }
+
+  void flush_() override {}
+
+private:
+  static LogLevel toTuiLevel(spdlog::level::level_enum level)
+  {
+    switch(level)
+    {
+      case spdlog::level::warn:
+        return LogLevel::Warning;
+      case spdlog::level::err:
+        return LogLevel::Error;
+      case spdlog::level::critical:
+        return LogLevel::Critical;
+      default:
+        return LogLevel::Info;
+    }
+  }
+
+  std::weak_ptr<Logger> logger_;
+};
+
+// the returned sink is not registered gobally so that it can be used by the elements it is passed to
+inline std::shared_ptr<spdlog::logger> makeLoggerSink(const std::shared_ptr<Logger> & logger)
+{
+  auto sink = std::make_shared<LoggerSink>(logger);
+  auto result = std::make_shared<spdlog::logger>("TUI-logger", std::move(sink));
+  result->set_level(spdlog::get_level());
+  return result;
+}
 
 } // namespace TUI

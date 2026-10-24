@@ -45,6 +45,16 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(fmt)
 
 FetchContent_Declare(
+  spdlog
+  GIT_REPOSITORY https://github.com/gabime/spdlog.git
+  GIT_TAG v1.17.0
+  GIT_PROGRESS TRUE
+  GIT_SHALLOW TRUE
+  EXCLUDE_FROM_ALL
+)
+FetchContent_MakeAvailable(spdlog)
+
+FetchContent_Declare(
   c-periphery
   GIT_REPOSITORY https://github.com/vsergeev/c-periphery.git
   GIT_TAG        v2.5.0
@@ -77,6 +87,8 @@ add_library(Controller
 target_include_directories(Controller PUBLIC
                            include/controller/
                            include/hardware/)
+target_link_libraries(Controller PUBLIC
+                      spdlog::spdlog)
 # target_link_libraries(Controller
 #                       mc_rtc)
 
@@ -104,7 +116,8 @@ target_link_libraries(TUI PUBLIC
                       ftxui::dom
                       ftxui::component
                       fmt::fmt
-                      magic_enum::magic_enum)
+                      magic_enum::magic_enum
+                      spdlog::spdlog)
 
 # Main executable
 add_executable(robot-TUI

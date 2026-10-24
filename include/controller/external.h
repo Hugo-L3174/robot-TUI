@@ -21,7 +21,7 @@ struct ExternalControllerConfig : ControllerConfig
 class ExternalController : public ControllerInterface
 {
 public:
-  explicit ExternalController(const ExternalControllerConfig & config);
+  explicit ExternalController(const ExternalControllerConfig & config, std::shared_ptr<spdlog::logger> logger = {});
   // The external controller run function runs the chosen communication interface, sends the robot sensor data to the
   // client controller and gets the commands from the client controller
   bool runControl(std::mutex & stateMutex,

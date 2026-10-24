@@ -10,4 +10,6 @@ enum class ControllerType
   External
 };
 
-std::unique_ptr<ControllerInterface> setupControllerType(ControllerType type, const ControllerConfig & config);
+std::unique_ptr<ControllerInterface> setupControllerType(ControllerType type,
+                                                         const ControllerConfig & config,
+                                                         std::shared_ptr<spdlog::logger> logger = {});
