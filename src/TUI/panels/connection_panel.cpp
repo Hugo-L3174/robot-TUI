@@ -40,6 +40,7 @@ void ConnectionPanel::buildContainer()
                                        interface_.connectionType_ = ConnectionType::Serial;
                                        interface_.connect(static_cast<MotorType>(servoType_),
                                                           interface_.getSerialPorts()[selectedSerial_]);
+                                       updatePanelControls(interface_.connected());
                                        break;
 
                                      default:
@@ -52,6 +53,7 @@ void ConnectionPanel::buildContainer()
                                     [&]
                                     {
                                       interface_.disconnect();
+                                      updatePanelControls(false);
                                     });
 
   servoOnButton_ = ftxui::Button("Servos ON",
@@ -73,8 +75,31 @@ void ConnectionPanel::buildContainer()
                                   })
                     | ftxui::Maybe([&] { return interface_.connected(); });
 
-  panelContainer_ = ftxui::Container::Horizontal({connectionSelector_, serialAddressSelector_, servoTypeSelector_,
-                                                  connectButton_, disconnectButton_, servoOnButton_, servoOffButton_});
+  // Initialize the container empty then call the update function
+  panelContainer_ = ftxui::Container::Horizontal({});
+  updatePanelControls(interface_.connected());
+}
+
+void ConnectionPanel::updatePanelControls(bool connected)
+{
+  // Keep the interactive tree in sync with the rendered layout so hidden controls
+  // cannot retain stale hit boxes or receive keyboard focus.
+  panelContainer_->DetachAllChildren();
+  if(connected)
+  {
+    panelContainer_->Add(disconnectButton_);
+    panelContainer_->Add(servoOnButton_);
+    panelContainer_->Add(servoOffButton_);
+    panelContainer_->SetActiveChild(disconnectButton_);
+  }
+  else
+  {
+    panelContainer_->Add(connectionSelector_);
+    panelContainer_->Add(serialAddressSelector_);
+    panelContainer_->Add(servoTypeSelector_);
+    panelContainer_->Add(connectButton_);
+    panelContainer_->SetActiveChild(connectionSelector_);
+  }
 }
 
 void ConnectionPanel::buildRenderer()

@@ -14,6 +14,8 @@ public:
   void buildRenderer() override;
 
 private:
+  // Util function to update components in the container according to connection state
+  void updatePanelControls(bool connected);
   // Variable to switch between connection types
   int interfaceIndex_;
   // Variable to switch on serial device

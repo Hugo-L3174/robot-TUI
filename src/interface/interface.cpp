@@ -22,15 +22,19 @@ void Interface::connect(const MotorType motorType, const std::string & device)
     // Poll hardware and fill servo ids
     detectServos();
     // Initialize states and commands with initial state
-    motorStates_.clear();
-    controllerCommands_.clear();
-    for(const auto & id : servoIds_)
     {
-      // First initialization calls hardware directly
-      motorStates_.emplace_back(servoHardware_->getServoData(id));
-      controllerCommands_.emplace_back(motorStates_.back());
-      // Set first target to current position
-      controllerCommands_.back().servoTargets.pos = motorStates_.back().position;
+      std::lock_guard<std::mutex> statesLock(statesMutex_);
+      std::lock_guard<std::mutex> commandsLock(commandsMutex_);
+      motorStates_.clear();
+      controllerCommands_.clear();
+      for(const auto & id : servoIds_)
+      {
+        // First initialization calls hardware directly
+        motorStates_.emplace_back(servoHardware_->getServoData(id));
+        controllerCommands_.emplace_back(motorStates_.back());
+        // Set first target to current position
+        controllerCommands_.back().servoTargets.pos = motorStates_.back().position;
+      }
     }
 
     // @todo for now setting commanding_ to true directly but should be a front end option
