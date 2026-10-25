@@ -21,11 +21,10 @@ enum class ConnectionType
 class Interface
 {
 public:
-  Interface(/*hardware& hardware,
-              controller& controller*/);
+  Interface();
 
   // Should set connected_ var
-  void connect(const std::string & device);
+  void connect(const MotorType motorType, const std::string & device);
   // Should clear servos_ and set connected_ to false
   void disconnect();
 

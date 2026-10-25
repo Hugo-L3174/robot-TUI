@@ -6,7 +6,7 @@
 using namespace TUI;
 
 ConnectionPanel::ConnectionPanel(Interface & interface, ftxui::App & screen)
-: TerminalPanel(interface, screen), interfaceIndex_(0), selectedAddress_(0)
+: TerminalPanel(interface, screen), interfaceIndex_(0), selectedSerial_(0), servoType_(0)
 {
   buildContainer();
   buildRenderer();
@@ -21,41 +21,37 @@ void ConnectionPanel::buildContainer()
 
   connectionSelector_ = ftxui::Radiobox(connectionNames, &interfaceIndex_);
 
-  // @todo for now only getting serial type of connection
-  // should be generic function depending on selected interfaceIndex_
-  addressSelector_ = ftxui::Dropdown(&interface_.getSerialPorts(), &selectedAddress_);
+  // showing the serial selector only if serial connection is selected
+  serialAddressSelector_ =
+      ftxui::Dropdown(&interface_.getSerialPorts(), &selectedSerial_)
+      | ftxui::Maybe([&] { return static_cast<ConnectionType>(interfaceIndex_) == ConnectionType::Serial; });
+
+  constexpr auto motorTypeArray = magic_enum::enum_names<MotorType>();
+  std::vector<std::string> motorTypeNames{motorTypeArray.begin(), motorTypeArray.end()};
+
+  servoTypeSelector_ = ftxui::Radiobox(motorTypeNames, &servoType_);
 
   connectButton_ = ftxui::Button("Connect",
                                  [&]
                                  {
-                                   // stopServoUpdateThread();
-                                   if(interfaceIndex_ == 0)
+                                   switch(static_cast<ConnectionType>(interfaceIndex_))
                                    {
-                                     interface_.connectionType_ = ConnectionType::Serial;
-                                     interface_.connect(interface_.getSerialPorts()[selectedAddress_]);
+                                     case ConnectionType::Serial:
+                                       interface_.connectionType_ = ConnectionType::Serial;
+                                       interface_.connect(static_cast<MotorType>(servoType_),
+                                                          interface_.getSerialPorts()[selectedSerial_]);
+                                       break;
+
+                                     default:
+                                       break;
                                    }
-                                   else
-                                   {
-                                     // @todo
-                                   }
-                                   // Resetting and refilling servo map
-                                   // servoMap_.clear();
-                                   // for(const auto & id : interface_.getServoIds())
-                                   // {
-                                   //   servoMap_.emplace(id, interface_.getServoData(id));
-                                   // }
-                                   // startServoUpdateThread();
-                                   // dataPanel_->startServoUpdateThread();
                                  });
 
   // @todo can this be greyed out when a controller is running ?
   disconnectButton_ = ftxui::Button("Disconnect",
                                     [&]
                                     {
-                                      //  stopServoUpdateThread();
-                                      //  dataPanel_->stopServoUpdateThread();
                                       interface_.disconnect();
-                                      //  servoMap_.clear();
                                     });
 
   servoOnButton_ = ftxui::Button("Servos ON",
@@ -65,7 +61,8 @@ void ConnectionPanel::buildContainer()
                                    {
                                      interface_.setServoOn(id, true);
                                    }
-                                 });
+                                 })
+                   | ftxui::Maybe([&] { return interface_.connected(); });
   servoOffButton_ = ftxui::Button("Servos OFF",
                                   [&]
                                   {
@@ -73,10 +70,11 @@ void ConnectionPanel::buildContainer()
                                     {
                                       interface_.setServoOn(id, false);
                                     }
-                                  });
+                                  })
+                    | ftxui::Maybe([&] { return interface_.connected(); });
 
-  panelContainer_ = ftxui::Container::Horizontal(
-      {connectionSelector_, addressSelector_, connectButton_, disconnectButton_, servoOnButton_, servoOffButton_});
+  panelContainer_ = ftxui::Container::Horizontal({connectionSelector_, serialAddressSelector_, servoTypeSelector_,
+                                                  connectButton_, disconnectButton_, servoOnButton_, servoOffButton_});
 }
 
 void ConnectionPanel::buildRenderer()
@@ -87,44 +85,65 @@ void ConnectionPanel::buildRenderer()
       {
         if(!interface_.connected())
         {
-          ftxui::Element config;
+          ftxui::Element connectionConfig;
 
-          if(interfaceIndex_ == 0)
+          switch(static_cast<ConnectionType>(interfaceIndex_))
           {
-            config = ftxui::hbox({
-                ftxui::text("Device: "),
-                addressSelector_->Render() | ftxui::flex,
-                ftxui::separator(),
-                connectButton_->Render() | ftxui::flex,
-            });
+            case ConnectionType::Serial:
+              connectionConfig = ftxui::hbox({ftxui::vbox({
+                  ftxui::text("Serial device:"),
+                  serialAddressSelector_->Render() | ftxui::flex,
+              })});
+              break;
+
+            default:
+              connectionConfig = ftxui::hbox({ftxui::text("No available parameters.")});
+              break;
           }
-          else
+
+          return ftxui::window(ftxui::text("Connection"),
+                               ftxui::vbox({ftxui::hbox({
+                                                ftxui::vbox({
+                                                    ftxui::text("Connection link:"),
+                                                    connectionSelector_->Render(),
+                                                }),
+                                                ftxui::separator(),
+                                                connectionConfig,
+                                                ftxui::separator(),
+                                                ftxui::vbox({
+                                                    ftxui::text("Servo motor type:"),
+                                                    servoTypeSelector_->Render(),
+                                                }),
+                                            }),
+                                            ftxui::separator(), connectButton_->Render() | ftxui::flex}));
+        }
+        else // if already connected
+        {
+          std::string connectionParam;
+          switch(static_cast<ConnectionType>(interface_.connectionType_))
           {
+            case ConnectionType::Serial:
+              connectionParam = interface_.getSerialPorts()[selectedSerial_];
+              break;
+
+            default:
+              connectionParam = "No parameter";
+              break;
           }
 
-          return ftxui::window(ftxui::text("Connection"), ftxui::hbox({
-                                                              connectionSelector_->Render(),
-                                                              ftxui::separator(),
-                                                              config,
-                                                          }));
+          return ftxui::window(
+              ftxui::text("Connection"),
+              ftxui::hbox(
+                  {ftxui::vbox({
+                       ftxui::text("Connected") | ftxui::color(ftxui::Color::Green),
+                       ftxui::text("Link type: "
+                                   + std::string(magic_enum::enum_name(static_cast<ConnectionType>(interfaceIndex_)))),
+                       ftxui::text("Parameter: " + connectionParam),
+                       ftxui::text("Servo: " + std::string(magic_enum::enum_name(static_cast<MotorType>(servoType_)))),
+                       ftxui::separator(),
+                       disconnectButton_->Render() | ftxui::flex,
+                   }),
+                   ftxui::separator(), servoOnButton_->Render(), ftxui::separator(), servoOffButton_->Render()}));
         }
-
-        std::string status;
-
-        if(interface_.connectionType_ == ConnectionType::Serial)
-        {
-          status = interface_.getSerialPorts()[selectedAddress_];
-        }
-        else
-        {
-        }
-
-        return ftxui::window(ftxui::text("Connection"), ftxui::hbox({ftxui::vbox({
-                                                                         ftxui::text("Connected : " + status),
-                                                                         ftxui::separator(),
-                                                                         disconnectButton_->Render() | ftxui::flex,
-                                                                     }),
-                                                                     ftxui::separator(), servoOnButton_->Render(),
-                                                                     ftxui::separator(), servoOffButton_->Render()}));
       });
 }

@@ -3,16 +3,19 @@
 #include <filesystem>
 #include <ranges>
 
-Interface::Interface() : connected_(false), hardwareTimestep_(0.005), commanding_(false)
-{
-  // @todo how to handle servo hardware factory ? probably need to pass arguments from front end?
-  // for now hardcoded feetech type
-  // setupServos(MotorType::Feetech);
-  setupServos(MotorType::Simulated);
-}
+Interface::Interface() : connected_(false), hardwareTimestep_(0.005), commanding_(false) {}
 
-void Interface::connect(const std::string & device)
+void Interface::connect(const MotorType motorType, const std::string & device)
 {
+  // Prevent a new connection to be called if already connected or hardware state update already running
+  if(connected_ || hardwareThread_.joinable())
+  {
+    return;
+  }
+
+  // Sets up servoHardware_
+  setupServos(motorType);
+  // Open the link on the given device
   connected_ = servoHardware_->openLink(device);
   if(connected_)
   {
@@ -87,9 +90,8 @@ void Interface::disconnect()
     hardwareThread_.request_stop();
     hardwareThread_.join();
   }
-  servoHardware_->closeLink();
+  connected_ = !servoHardware_->closeLink();
   servoIds_.clear();
-  connected_ = false;
 }
 
 void Interface::startController()
