@@ -55,8 +55,16 @@ void ControllerPanel::buildContainer()
 
 void ControllerPanel::buildRenderer()
 {
-  panelRenderer_ = ftxui::Renderer(panelContainer_,
-                                   [&] { return ftxui::window(ftxui::text("Controller"), panelContainer_->Render()); });
+  panelRenderer_ =
+      ftxui::Renderer(panelContainer_,
+                      [&]
+                      {
+                        if(!interface_.connected())
+                        {
+                          return ftxui::window(ftxui::text("Controller"), ftxui::text("Open a connection first."));
+                        }
+                        return ftxui::window(ftxui::text("Controller"), panelContainer_->Render());
+                      });
 }
 
 void ControllerPanel::createController(ControllerType type)
