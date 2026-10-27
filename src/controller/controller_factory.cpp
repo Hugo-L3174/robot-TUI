@@ -1,6 +1,7 @@
 #include "controller_factory.h"
 #include "external.h"
 #include "manual.h"
+#include "mc_rtc/mc_controller.h"
 
 std::unique_ptr<ControllerInterface> setupControllerType(ControllerType type,
                                                          const ControllerConfig & config,
@@ -28,6 +29,17 @@ std::unique_ptr<ControllerInterface> setupControllerType(ControllerType type,
       ExternalControllerConfig externalConfig;
       return std::make_unique<ExternalController>(externalConfig, std::move(logger));
     }
+#ifdef ROBOT_TUI_HAS_MC_RTC
+    case ControllerType::mc_rtc:
+    {
+      // if(const auto * mcConfig = dynamic_cast<const MCControllerConfig *>(&config))
+      // {
+      //   return std::make_unique<MCController>(*mcConfig, std::move(logger));
+      // }
+      MCControllerConfig MCConfig;
+      return std::make_unique<MCController>(MCConfig, std::move(logger));
+    }
+#endif
     default:
       return nullptr;
   }

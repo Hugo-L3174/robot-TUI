@@ -37,17 +37,20 @@ FetchContent_MakeAvailable(magic_enum)
 FetchContent_Declare(
   fmt
   GIT_REPOSITORY https://github.com/fmtlib/fmt.git
-  GIT_TAG        12.2.0
+  GIT_TAG        8.1.1 # using older fmt version for compatibility with mc_rtc
   GIT_PROGRESS   TRUE
   GIT_SHALLOW    TRUE
   EXCLUDE_FROM_ALL
 )
 FetchContent_MakeAvailable(fmt)
 
+# Avoid spdlog using the bundled fmt version, it can cause issues when linking with a controller lib that already has another version
+set(SPDLOG_FMT_EXTERNAL ON CACHE BOOL "Use external fmt library" FORCE)
+
 FetchContent_Declare(
   spdlog
   GIT_REPOSITORY https://github.com/gabime/spdlog.git
-  GIT_TAG v1.17.0
+  GIT_TAG v1.9.2 # using older spdlog version for compatibility with mc_rtc
   GIT_PROGRESS TRUE
   GIT_SHALLOW TRUE
   EXCLUDE_FROM_ALL
@@ -81,16 +84,32 @@ add_library(Controller
             src/controller/controller_factory.cpp
             src/controller/manual.cpp
             src/controller/external.cpp
-            src/controller/connection/UDPServer.cpp
-            src/controller/mc_rtc/mc_controller.cpp)
-            # XXX how to handle conditional include of mc_rtc ?
+            src/controller/connection/UDPServer.cpp)
+
+# Add and build mc_rtc controller only if it is found
+find_package(mc_rtc QUIET)
+
+if(mc_rtc_FOUND)
+  target_sources(Controller PRIVATE
+    src/controller/mc_rtc/mc_controller.cpp
+    include/controller/mc_rtc/mc_controller.h)
+
+  target_link_libraries(Controller PUBLIC mc_rtc::mc_control)
+  # Create variable that can be used in code to check
+  target_compile_definitions(Controller PUBLIC ROBOT_TUI_HAS_MC_RTC=1)
+
+  # Some mc_rtc things require c++ 17 instead of 20
+  set_source_files_properties(
+    src/controller/mc_rtc/mc_controller.cpp
+    PROPERTIES COMPILE_OPTIONS "-std=c++17"
+  )
+endif()
+
 target_include_directories(Controller PUBLIC
                            include/controller/
                            include/hardware/)
 target_link_libraries(Controller PUBLIC
                       spdlog::spdlog)
-# target_link_libraries(Controller
-#                       mc_rtc)
 
 # Central interface connecting all elements
 add_library(Interface

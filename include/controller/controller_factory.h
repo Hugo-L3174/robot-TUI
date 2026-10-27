@@ -6,8 +6,10 @@
 enum class ControllerType
 {
   Manual,
+  External,
+#ifdef ROBOT_TUI_HAS_MC_RTC
   mc_rtc,
-  External
+#endif
 };
 
 std::unique_ptr<ControllerInterface> setupControllerType(ControllerType type,

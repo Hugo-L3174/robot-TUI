@@ -113,9 +113,11 @@ void ControllerPanel::createController(ControllerType type)
       // @todo make a window and display controller type on top
       panelContainer_->Add(controllerLog_);
       break;
+#ifdef ROBOT_TUI_HAS_MC_RTC
     case ControllerType::mc_rtc:
       panelContainer_->Add(controllerLog_);
       break;
+#endif
   }
 
   // pass logger sink to controller layer
