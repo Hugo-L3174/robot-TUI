@@ -102,11 +102,11 @@ void Interface::startController()
 {
   if(controller_)
   {
-    controller_->startControl();
     // Start controller thread
     controllerThread_ = std::jthread(
         [&](std::stop_token stopToken)
         {
+          controller_->startControl();
           while(!stopToken.stop_requested())
           {
             auto start = std::chrono::high_resolution_clock::now();
