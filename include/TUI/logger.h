@@ -5,7 +5,6 @@
 #include <functional>
 #include <memory>
 #include <mutex>
-#include <optional>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -31,20 +30,12 @@ enum class LogLevel
   Critical,
 };
 
-// A message can be built from several parts so they can be styled differently
-struct LogPart
-{
-  std::string text;
-  // Optional characteristics to decorate
-  std::optional<ftxui::Color> foreground;
-  std::optional<ftxui::Color> background;
-  bool bold = false;
-};
-
-// A log record is composed of differently decorated parts
+// A single record is the whole message plus the associated severity level
+// The severity will determine what tag will be rendered in front of the text
 struct LogRecord
 {
-  std::vector<LogPart> parts;
+  std::string message;
+  LogLevel level = LogLevel::Info;
 };
 
 /**
@@ -61,24 +52,14 @@ public:
   {
   }
 
-  // Log a raw message with an optional log level decorator
+  // Append a message to the buffer with its own severity level for the tag
   void append(std::string_view message, LogLevel level = LogLevel::Info)
   {
     if(message.empty()) return;
 
-    LogRecord record;
-    record.parts.push_back(
-        LogPart{.text = "[" + std::string(levelName(level)) + "] ", .foreground = levelColor(level), .bold = true});
-    record.parts.push_back(LogPart{.text = std::string(message)});
-    append(std::move(record));
-  }
-
-  // Log an already decorated message
-  void append(LogRecord record)
-  {
     {
       std::lock_guard<std::mutex> lock(mutex_);
-      appendRecord(std::move(record));
+      appendRecord(LogRecord{std::string(message), level});
     }
     // call tui refresh function
     if(requestRefresh_)
@@ -92,7 +73,7 @@ public:
     {
       std::lock_guard<std::mutex> lock(mutex_);
       entries_.clear();
-      scrollOffset_ = 0;
+      scrollPosition_ = 1.f;
     }
     if(requestRefresh_)
     {
@@ -115,15 +96,13 @@ public:
       {
         {
           std::lock_guard<std::mutex> lock(mutex_);
-          // Offset is at zero at the bottom (newest added element) and goes up with older lines
-          const size_t maxOffset = entries_.empty() ? 0 : entries_.size() - 1;
           if(mouse.button == ftxui::Mouse::WheelUp)
           {
-            scrollOffset_ = std::min(maxOffset, scrollOffset_ + 3);
+            scrollPosition_ = std::max(0.f, scrollPosition_ - scrollStep);
           }
           else
           {
-            scrollOffset_ = scrollOffset_ > 3 ? scrollOffset_ - 3 : 0;
+            scrollPosition_ = std::min(1.f, scrollPosition_ + scrollStep);
           }
         }
         if(requestRefresh_)
@@ -141,15 +120,9 @@ public:
         if(mouse.x == box_.x_max)
         {
           std::lock_guard<std::mutex> lock(mutex_);
-          const int trackHeight = box_.y_max - box_.y_min + 1;
-          const size_t maxOffset = entries_.empty() ? 0 : entries_.size() - 1;
-          if(trackHeight > 1)
-          {
-            // Move proportionally to scroll size
-            const int fromBottom = box_.y_max - mouse.y;
-            scrollOffset_ =
-                maxOffset * static_cast<size_t>(std::max(0, fromBottom)) / static_cast<size_t>(trackHeight - 1);
-          }
+          const float trackHeight = static_cast<float>(std::max(1, box_.y_max - box_.y_min));
+          const float fromBottom = static_cast<float>(box_.y_max - mouse.y);
+          scrollPosition_ = std::clamp(1.f - fromBottom / trackHeight, 0.f, 1.f);
         }
         if(requestRefresh_) requestRefresh_();
         return true;
@@ -166,14 +139,13 @@ public:
     // Otherwise process
     {
       std::lock_guard<std::mutex> lock(mutex_);
-      const size_t maxOffset = entries_.empty() ? 0 : entries_.size() - 1;
       if(event == ftxui::Event::ArrowUp)
       {
-        scrollOffset_ = std::min(maxOffset, scrollOffset_ + 1);
+        scrollPosition_ = std::max(0.f, scrollPosition_ - scrollStep);
       }
       else if(event == ftxui::Event::ArrowDown)
       {
-        scrollOffset_ = scrollOffset_ > 0 ? scrollOffset_ - 1 : 0;
+        scrollPosition_ = std::min(1.f, scrollPosition_ + scrollStep);
       }
       else
       {
@@ -188,51 +160,72 @@ public:
   ftxui::Element OnRender() override
   {
     std::vector<ftxui::Element> rows;
-    size_t focusedRow = 0;
+    float scrollPosition;
     {
       std::lock_guard<std::mutex> lock(mutex_);
+      scrollPosition = scrollPosition_;
       rows.reserve(entries_.size());
-      // ftxui::yframe follows a focused row and keeps the view on it
-      if(!entries_.empty())
-      {
-        focusedRow = entries_.size() - 1 - std::min(scrollOffset_, entries_.size() - 1);
-      }
 
-      for(size_t i = 0; i < entries_.size(); ++i)
+      for(const auto & entry : entries_)
       {
-        std::vector<ftxui::Element> parts;
-        for(const auto & part : entries_[i])
+        // for each entry add the severity tag in front (will be decorated)
+        const std::string tag = "[" + std::string(levelName(entry.level)) + "] ";
+        ftxui::Elements wrappedLines;
+
+        // lambda to decide how to append the characters of the string to a rendered row so that we can wrap if it's too
+        // long
+        auto appendCharacters = [&](ftxui::Elements & characters, std::string_view text, bool decorate)
         {
-          // parse text and decorate if needed
-          auto element = ftxui::text(part.text);
-          if(part.foreground)
+          // Iterate over the bytes of the input string to decompose into each letter/character
+          for(size_t byte = 0; byte < text.size();)
           {
-            element = element | ftxui::color(*part.foreground);
+            // Using UTF8 encoding: check lead byte to get how many bytes compose this character
+            const auto lead = static_cast<unsigned char>(text[byte]);
+            // under 0x80 1byte char, after 2bytes until 0xE0 then 3 until 0xF0 then 4
+            const size_t length = lead < 0x80 ? 1 : (lead < 0xE0 ? 2 : (lead < 0xF0 ? 3 : 4));
+            auto character = ftxui::text(text.substr(byte, std::min(length, text.size() - byte)));
+            if(decorate)
+            {
+              character = character | ftxui::color(levelColor(entry.level)) | ftxui::bold;
+            }
+            characters.push_back(std::move(character));
+            // skip the rest of the bytes of the one we just added
+            byte += length;
           }
-          if(part.background)
-          {
-            element = element | ftxui::bgcolor(*part.background);
-          }
-          if(part.bold)
-          {
-            element = element | ftxui::bold;
-          }
-          parts.push_back(std::move(element));
-        }
-        auto row = ftxui::hbox(std::move(parts));
-        // apply focus if this one is the correct offset
-        if(i == focusedRow)
+        };
+
+        size_t lineStart = 0;
+        bool firstLine = true;
+        while(lineStart <= entry.message.size())
         {
-          row = row | ftxui::focus;
+          // check for a linebreak
+          const size_t lineEnd = entry.message.find('\n', lineStart);
+          // if no linebreak found then we finish at the end of the message
+          const size_t end = (lineEnd == std::string::npos) ? entry.message.size() : lineEnd;
+          ftxui::Elements characters;
+          // Append tag with its level decoration
+          if(firstLine)
+          {
+            appendCharacters(characters, tag, true);
+          }
+          // Append the rest of the line before wrapping
+          appendCharacters(characters, std::string_view(entry.message).substr(lineStart, end - lineStart), false);
+          // Use hflow to wrap ftxui elements automatically (since now each char is an element the wrap can occur
+          // anywhere in the string)
+          wrappedLines.push_back(ftxui::hflow(std::move(characters)));
+          firstLine = false;
+          if(lineEnd == std::string::npos)
+          {
+            break;
+          }
+          lineStart = lineEnd + 1;
         }
-        rows.push_back(std::move(row));
+        rows.push_back(ftxui::vbox(std::move(wrappedLines)));
       }
     }
 
-    // @fixme this should wrap with terminal, see in ftxui examples
-    // The reflected box is used for checking if actions happened on this
-    return ftxui::vbox(std::move(rows)) | ftxui::vscroll_indicator | ftxui::yframe
-           | ftxui::size(ftxui::HEIGHT, ftxui::LESS_THAN, 12) | ftxui::reflect(box_);
+    return ftxui::vbox(std::move(rows)) | ftxui::focusPositionRelative(0.f, scrollPosition) | ftxui::vscroll_indicator
+           | ftxui::yframe | ftxui::flex | ftxui::reflect(box_);
   }
 
   // Making it focusable so that it can be scrolled instead of passing focus to other elements
@@ -277,66 +270,20 @@ private:
   // Break down record into different lines for easier ftxui render
   void appendRecord(LogRecord record)
   {
-    std::vector<LogPart> entry;
-    bool splitAtNewline = false;
-    for(const auto & part : record.parts)
-    {
-      size_t begin = 0;
-      while(begin <= part.text.size())
-      {
-        // if the part has a newline, break it down into different entries
-        const size_t newline = part.text.find('\n', begin);
-        const size_t end = (newline == std::string::npos) ? part.text.size() : newline;
-        LogPart linePart = part;
-        linePart.text = part.text.substr(begin, end - begin);
-
-        // registering this line as an entry
-        if(!linePart.text.empty())
-        {
-          entry.push_back(std::move(linePart));
-        }
-        // If nothing left after the \n then part is fully processed
-        if(newline == std::string::npos)
-        {
-          break;
-        }
-
-        appendEntry(std::move(entry));
-        entry.clear();
-        splitAtNewline = true;
-        begin = newline + 1;
-      }
-    }
-
-    // If no \n are left but there is still text push the rest
-    if(!entry.empty() || !splitAtNewline)
-    {
-      appendEntry(std::move(entry));
-    }
-  }
-
-  // Util function to register a processed line
-  void appendEntry(std::vector<LogPart> entry)
-  {
-    // Increment offset with entry if not at the bottom so that the focused line stays in view
-    if(scrollOffset_ > 0)
-    {
-      scrollOffset_++;
-    }
-    entries_.push_back(std::move(entry));
+    entries_.push_back(std::move(record));
     while(entries_.size() > maxLines_)
     {
       entries_.pop_front();
     }
-    // clamp offset to avoid being negative after popping
-    scrollOffset_ = std::min(scrollOffset_, entries_.empty() ? size_t{0} : entries_.size() - 1);
   }
 
+  // scroll unit to divide the total log buffer
+  static constexpr float scrollStep = 0.05f;
   const size_t maxLines_;
   std::function<void()> requestRefresh_;
   mutable std::mutex mutex_;
-  std::deque<std::vector<LogPart>> entries_;
-  size_t scrollOffset_ = 0;
+  std::deque<LogRecord> entries_;
+  float scrollPosition_ = 1.f;
   // rendered space of this logger (used to check if events happen on it)
   ftxui::Box box_;
 };
