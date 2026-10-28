@@ -25,6 +25,9 @@ private:
   ftxui::Component mainContainer_;
   ftxui::Component mainRenderer_;
 
+  // data and controller panels split component
+  ftxui::Component split_;
+
   /********** Connection panel **********/
   std::unique_ptr<TUI::ConnectionPanel> connectionPanel_;
 

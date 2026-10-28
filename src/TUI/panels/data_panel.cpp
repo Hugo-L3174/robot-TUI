@@ -33,8 +33,7 @@ void DataPanel::buildRenderer()
 
         std::vector<std::vector<std::string>> tableRows;
         // First row (categories)
-        tableRows.push_back({"ID", "Voltage", "Current", "KP", "KD", "Position (rad)", "Position target",
-                             "Velocity (rad/s)", "Torque"});
+        tableRows.push_back({"ID", "Voltage", "Current", "KP", "KD", "Pos(rad)", "Pos target", "Vel(rad/s)", "Torque"});
 
         std::unique_lock<std::mutex> lock(servosMutex_);
         for(const auto & servoData : servoData_)
