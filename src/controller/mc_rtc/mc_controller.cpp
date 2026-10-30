@@ -26,6 +26,7 @@ bool MCController::startControl()
       // Create global controller
       controller_ = std::make_unique<mc_control::MCGlobalController>(config_.configurationFile, nullptr);
       config_.timestep = controller_->timestep();
+      controller_->running = true;
       if(logger_)
       {
         logger_->info("mc_rtc controller '{}' loaded with timestep {}", controller_->current_controller(),
@@ -72,11 +73,6 @@ bool MCController::runControl(std::mutex & stateMutex,
 
   try
   {
-    if(logger_)
-    {
-      logger_->info("running mc_rtc controller");
-    }
-
     auto & mc_controller = controller_->controller();
     auto & robot =
         config_.robotName.empty() ? mc_controller.robots().robot() : mc_controller.robots().robot(config_.robotName);
@@ -109,10 +105,6 @@ bool MCController::runControl(std::mutex & stateMutex,
     if(!initialized_)
     {
       controller_->init({{robot.name(), positions}});
-      if(logger_)
-      {
-        logger_->info("called init correctly");
-      }
       initialized_ = true;
     }
 
@@ -124,10 +116,6 @@ bool MCController::runControl(std::mutex & stateMutex,
     if(!controller_->run())
     {
       return false;
-    }
-    if(logger_)
-    {
-      logger_->info("ctl run succeeded !");
     }
 
     const auto & q = robot.mbc().q;
