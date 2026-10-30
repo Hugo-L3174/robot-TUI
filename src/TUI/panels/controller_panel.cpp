@@ -41,7 +41,8 @@ void ControllerPanel::buildContainer()
   stopControlButton_ = ftxui::Button("Stop controller", [&] { detachController(); });
 
   // Logger (not added to container yet, depends on controller type)
-  controllerLog_ = std::make_shared<Logger>(1000, [this] { screen_.PostEvent(ftxui::Event::Custom); });
+  // @fixme not adding the post event function because ftxui event buffer is not thread safe !
+  controllerLog_ = std::make_shared<Logger>(2000);
   // Create sink to logger for this panel, to be passed to controller elements
   controllerSink_ = makeLoggerSink(controllerLog_);
 
