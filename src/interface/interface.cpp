@@ -106,22 +106,19 @@ void Interface::startController()
     controllerThread_ = std::jthread(
         [&](std::stop_token stopToken)
         {
-          controller_->startControl();
-          while(!stopToken.stop_requested())
+          if(controller_->startControl())
           {
-            auto start = std::chrono::high_resolution_clock::now();
-            controller_->runControl(statesMutex_, motorStates_, commandsMutex_, controllerCommands_);
-            /* @note process in mc_udp is that the server holds a vector of sensors and a vector of commands (called
-            encoders and encoders velocities but from qp output) each "execute" of the server calls the server send,
-            which sends the sensor data buffer to the last connected client, then checks if any control data was
-            received, and if so sends the control info
-            */
-            auto end = std::chrono::high_resolution_clock::now();
-            double elapsed = std::chrono::duration<double>(end - start).count();
-            if(!elapsed > controller_->timestep())
+            while(!stopToken.stop_requested())
             {
-              std::this_thread::sleep_for(
-                  std::chrono::milliseconds(static_cast<unsigned int>(controller_->timestep() * 1000 - elapsed)));
+              auto start = std::chrono::high_resolution_clock::now();
+              controller_->runControl(statesMutex_, motorStates_, commandsMutex_, controllerCommands_);
+              auto end = std::chrono::high_resolution_clock::now();
+              double elapsed = std::chrono::duration<double>(end - start).count();
+              if(!elapsed > controller_->timestep())
+              {
+                std::this_thread::sleep_for(
+                    std::chrono::milliseconds(static_cast<unsigned int>(controller_->timestep() * 1000 - elapsed)));
+              }
             }
           }
         });
