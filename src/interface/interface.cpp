@@ -110,14 +110,14 @@ void Interface::startController()
           {
             while(!stopToken.stop_requested())
             {
-              auto start = std::chrono::high_resolution_clock::now();
+              auto start = std::chrono::steady_clock::now();
               controller_->runControl(statesMutex_, motorStates_, commandsMutex_, controllerCommands_);
-              auto end = std::chrono::high_resolution_clock::now();
-              double elapsed = std::chrono::duration<double>(end - start).count();
-              if(!elapsed > controller_->timestep())
+              auto end = std::chrono::steady_clock::now();
+              double elapsed_microsec = std::chrono::duration<double, std::micro>(end - start).count();
+              if(!(elapsed_microsec > controller_->timestep() * 1000000))
               {
-                std::this_thread::sleep_for(
-                    std::chrono::milliseconds(static_cast<unsigned int>(controller_->timestep() * 1000 - elapsed)));
+                std::this_thread::sleep_for(std::chrono::microseconds(
+                    static_cast<unsigned int>(controller_->timestep() * 1000000 - elapsed_microsec)));
               }
             }
           }

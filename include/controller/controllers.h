@@ -18,7 +18,8 @@ struct RobotConfig
 struct ControllerConfig
 {
   virtual ~ControllerConfig() = default;
-  double timestep = 0.01;
+  // controller timestep in seconds
+  double timestep = 0.002;
   std::vector<RobotConfig> ctlRobotConfigs;
 };
 
@@ -38,6 +39,7 @@ public:
                           std::vector<ServoInfo> & commands) = 0;
   virtual bool startControl() = 0;
   virtual bool stopControl() = 0;
+  // Controller timestep in seconds
   inline double timestep() const noexcept
   {
     return config_.timestep;

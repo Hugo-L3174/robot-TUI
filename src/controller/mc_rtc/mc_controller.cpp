@@ -20,9 +20,12 @@ bool MCController::startControl()
     if(!controller_)
     {
       // Reroute mc_rtc's default spdlog sinks to this one so that it can be displayed in the TUI
-      mc_rtc::log::details::info().sinks() = logger_->sinks();
-      mc_rtc::log::details::success().sinks() = logger_->sinks();
-      mc_rtc::log::details::cerr().sinks() = logger_->sinks();
+      if(logger_)
+      {
+        mc_rtc::log::details::info().sinks() = logger_->sinks();
+        mc_rtc::log::details::success().sinks() = logger_->sinks();
+        mc_rtc::log::details::cerr().sinks() = logger_->sinks();
+      }
       // Create global controller
       controller_ = std::make_unique<mc_control::MCGlobalController>(config_.configurationFile, nullptr);
       config_.timestep = controller_->timestep();
