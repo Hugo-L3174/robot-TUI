@@ -9,18 +9,10 @@
 
 #include <spdlog/logger.h>
 
-struct RobotConfig
-{
-  std::string name;
-  int actuatedJointsNb;
-};
-
 struct ControllerConfig
 {
   virtual ~ControllerConfig() = default;
-  // controller timestep in seconds
   double timestep = 0.002;
-  std::vector<RobotConfig> ctlRobotConfigs;
 };
 
 class ControllerInterface

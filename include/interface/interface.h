@@ -3,6 +3,7 @@
 #include <map>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <string>
 #include <thread>
 #include <vector>
@@ -16,6 +17,23 @@
 enum class ConnectionType
 {
   Serial,
+};
+
+struct ServoConfig
+{
+  std::string jointName;
+  int servoId;
+  double qInit;
+  double jointUpperLimit;
+  double jointLowerLimit;
+  double effortLimit;
+};
+
+struct RobotConfig
+{
+  std::string name;
+  int actuatedJointsNb;
+  std::map<std::string, ServoConfig> actuators;
 };
 
 class Interface
@@ -82,12 +100,25 @@ public:
 
   bool setServoOn(int id, bool activate);
 
+  void setRobotConfig(const RobotConfig & config)
+  {
+    robotConfig_ = config;
+  }
+
+  const std::optional<RobotConfig> & robotConfig() const
+  {
+    return robotConfig_;
+  }
+
   // @todo this is a single value now but might want to have a vector
   // and servos would be a map with the connection link or robot as key?
   // In case single controller with different connections (multi-robot)
   ConnectionType connectionType_;
 
 private:
+  // Optional robot config to associate servo ids to joints with limits
+  std::optional<RobotConfig> robotConfig_;
+
   // Hardware link connection state
   bool connected_;
 

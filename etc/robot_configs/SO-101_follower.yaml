@@ -1,0 +1,50 @@
+name: SO-101_follower
+servos:
+  shoulder_pan:
+    servo_id: 1
+    q_init: 0.
+    limits:
+      q:
+        upper: 1.91986
+        lower: -1.91986
+      torque: 10
+  shoulder_lift:
+    servo_id: 2
+    q_init: -1.57
+    limits:
+      q:
+        upper: 1.5708
+        lower: -1.5708
+      torque: 10
+  elbow_flex:
+    servo_id: 3
+    q_init: 1.57
+    limits:
+      q:
+        upper: 1.69
+        lower: -1.69
+      torque: 10
+  wrist_flex:
+    servo_id: 4
+    q_init: 0.4
+    limits:
+      q:
+        upper: 1.65806
+        lower: -1.65806
+      torque: 10
+  wrist_roll:
+    servo_id: 5
+    q_init: 0.
+    limits:
+      q:
+        upper: 2.84121
+        lower: -2.74385
+      torque: 10
+  gripper:
+    servo_id: 6
+    q_init: 0.
+    limits:
+      q:
+        upper: 1.74533
+        lower: -0.174533
+      torque: 10

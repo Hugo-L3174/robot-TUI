@@ -5,6 +5,8 @@ project(robot-TUI
   VERSION 1.0.0
 )
 
+include(GNUInstallDirs)
+
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -66,6 +68,16 @@ FetchContent_Declare(
   EXCLUDE_FROM_ALL
 )
 FetchContent_MakeAvailable(c-periphery)
+
+FetchContent_Declare(
+  yaml-cpp
+  GIT_REPOSITORY https://github.com/jbeder/yaml-cpp.git
+  GIT_TAG yaml-cpp-0.9.0
+  GIT_PROGRESS   TRUE
+  GIT_SHALLOW    TRUE
+  EXCLUDE_FROM_ALL
+)
+FetchContent_MakeAvailable(yaml-cpp)
 
 
 # Hardware related things, servos etc
@@ -136,7 +148,13 @@ target_link_libraries(TUI PUBLIC
                       ftxui::component
                       fmt::fmt
                       magic_enum::magic_enum
-                      spdlog::spdlog)
+                      spdlog::spdlog
+                      yaml-cpp::yaml-cpp)
+# Adding path variables for configs folder loading
+target_compile_definitions(TUI PRIVATE
+  ROBOT_TUI_INSTALL_CONFIG_DIR="${CMAKE_INSTALL_FULL_DATADIR}/robot-TUI/robot_configs"
+  ROBOT_TUI_SRC_CONFIG_DIR="${CMAKE_CURRENT_SOURCE_DIR}/etc/robot_configs"
+)
 
 # Main executable
 add_executable(robot-TUI
@@ -145,3 +163,10 @@ target_include_directories(robot-TUI PRIVATE
                            include/TUI)
 target_link_libraries(robot-TUI PRIVATE
                       TUI)
+
+install(TARGETS robot-TUI
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(DIRECTORY etc/robot_configs/
+        DESTINATION ${CMAKE_INSTALL_DATADIR}/robot-TUI/robot_configs
+        FILES_MATCHING
+        PATTERN "*.yaml")

@@ -30,6 +30,7 @@ Dependencies that are used but pulled and built automatically by CMake FetchCont
 - [fmt](https://github.com/fmtlib/fmt) for easy formatting
 - [spdlog](https://github.com/gabime/spdlog) for logging sinks that avoid outputting directly to cout
 - [c-periphery](https://github.com/vsergeev/c-periphery) for low level hardware connections
+- [yaml-cpp](https://github.com/jbeder/yaml-cpp) for configuration files loading and parsing
 
 #### Instructions
 
