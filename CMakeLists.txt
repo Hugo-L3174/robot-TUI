@@ -14,10 +14,13 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 include(FetchContent)
 
+option(ROBOT_TUI_FORCE_FETCHCONTENT "Force using FetchContent even if system dependencies exist" ON)
 set(FETCHCONTENT_UPDATES_DISCONNECTED ON)
 set(FETCHCONTENT_QUIET OFF)
 
-find_package(ftxui REQUIRED)
+if(NOT ROBOT_TUI_FORCE_FETCHCONTENT)
+  find_package(ftxui QUIET)
+endif()
 if(NOT ftxui_FOUND)
 FetchContent_Declare(ftxui
   GIT_REPOSITORY https://github.com/arthursonzogni/ftxui.git
@@ -31,7 +34,9 @@ endif()
 
 # easy enum conversion into strings
 # Try to find system version of magic_enum
-find_package(magic_enum QUIET)
+if(NOT ROBOT_TUI_FORCE_FETCHCONTENT)
+  find_package(magic_enum QUIET)
+endif()
 if(NOT magic_enum_FOUND)
 FetchContent_Declare(magic_enum
   GIT_REPOSITORY https://github.com/Neargye/magic_enum.git
@@ -44,7 +49,9 @@ FetchContent_MakeAvailable(magic_enum)
 endif()
 
 # Try to find system version of fmt
-find_package(fmt QUIET)
+if(NOT ROBOT_TUI_FORCE_FETCHCONTENT)
+  find_package(fmt QUIET)
+endif()
 if(NOT fmt_FOUND)
 FetchContent_Declare(
   fmt
@@ -58,7 +65,9 @@ FetchContent_MakeAvailable(fmt)
 endif()
 
 # Try to find system version of spdlog
-find_package(spdlog QUIET)
+if(NOT ROBOT_TUI_FORCE_FETCHCONTENT)
+  find_package(spdlog QUIET)
+endif()
 if(NOT spdlog_FOUND)
 # Avoid spdlog using the bundled fmt version, it can cause issues when linking with a controller lib that already has another version
 set(SPDLOG_FMT_EXTERNAL ON CACHE BOOL "Use external fmt library" FORCE)
@@ -75,7 +84,9 @@ FetchContent_MakeAvailable(spdlog)
 endif()
 
 # Try to find system version of c-periphery
-find_package(periphery QUIET)
+if(NOT ROBOT_TUI_FORCE_FETCHCONTENT)
+  find_package(periphery QUIET)
+endif()
 if(NOT periphery_FOUND)
 FetchContent_Declare(
   c-periphery
@@ -86,10 +97,17 @@ FetchContent_Declare(
   EXCLUDE_FROM_ALL
 )
 FetchContent_MakeAvailable(c-periphery)
+# Alias target for compatibility if needed
+if(NOT TARGET periphery::periphery AND TARGET periphery)
+  add_library(periphery::periphery ALIAS periphery)
+endif()
+
 endif()
 
 # Try to find system version of yaml-cpp
-find_package(yaml-cpp QUIET)
+if(NOT ROBOT_TUI_FORCE_FETCHCONTENT)
+  find_package(yaml-cpp QUIET)
+endif()
 if(NOT yaml-cpp_FOUND)
 FetchContent_Declare(
   yaml-cpp
