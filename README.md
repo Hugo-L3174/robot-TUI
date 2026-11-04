@@ -45,3 +45,18 @@ Run simply by calling the executable
 ```sh
 ./robot-TUI
 ```
+
+## Nix
+
+Alternatively, you can use [Nix](https://nixos.org/) to build this software.
+
+- If you trust us, add our binary cache:
+
+    ```
+    echo 'extra-substituters = https://gepetto.cachix.org https://attic.iid.ciirc.cvut.cz/ros https://mc-rtc-nix.cachix.org' | sudo tee -a /etc/nix/nix.conf
+    echo 'extra-trusted-public-keys = gepetto.cachix.org-1:toswMl31VewC0jGkN6+gOelO2Yom0SOHzPwJMY2XiDY= ros:JR95vUYsShSqfA1VTYoFt1Nz6uXasm5QrcOsGry9f6Q= mc-rtc-nix.cachix.org-1:5M3sLvHXJCep4wc1tQl7QuFWL2eH2I0jkuvWtqJDYQs=' | sudo tee -a /etc/nix/nix.conf
+    ```
+
+- Build with `nix build github:Hugo-L3174#robot-tui`
+- Run with `nix run github:Hugo-L3174#robot-tui`
+- Develop with `nix develop .#robot-tui` within the cloned repository. All dependencies are pulled automatically, build according to the build instructions above.
