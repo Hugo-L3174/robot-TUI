@@ -46,6 +46,7 @@ private:
   ftxui::Component servoOffButton_;
   ftxui::Component configLoader_;
   ftxui::Component configLoadButton_;
+  ftxui::Component configResetButton_;
 };
 
 } // namespace TUI

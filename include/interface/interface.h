@@ -105,6 +105,12 @@ public:
     robotConfig_ = config;
   }
 
+  // Clear the currently loaded robot config
+  void clearRobotConfig()
+  {
+    robotConfig_.reset();
+  }
+
   const std::optional<RobotConfig> & robotConfig() const
   {
     return robotConfig_;

@@ -48,6 +48,14 @@ void ConnectionPanel::buildContainer()
     configLoader_ = ftxui::Dropdown(configFiles_, &selectedConfig_);
   }
   configLoadButton_ = ftxui::Button("Load config", [&] { loadSelectedRobotConfig(); });
+  configResetButton_ = ftxui::Button("Reset config",
+                                     [&]
+                                     {
+                                       configStatus_.clear();
+                                       interface_.clearRobotConfig();
+                                     })
+                       // only show reset button if a config is loaded
+                       | ftxui::Maybe([&] { return interface_.robotConfig().has_value(); });
 
   connectButton_ = ftxui::Button("Connect",
                                  [&]
@@ -117,6 +125,7 @@ void ConnectionPanel::updatePanelControls(bool connected)
     panelContainer_->Add(servoTypeSelector_);
     panelContainer_->Add(configLoader_);
     panelContainer_->Add(configLoadButton_);
+    panelContainer_->Add(configResetButton_);
     panelContainer_->Add(connectButton_);
     panelContainer_->SetActiveChild(connectionSelector_);
   }
@@ -260,7 +269,8 @@ void ConnectionPanel::buildRenderer()
                                                          configLoader_->Render(),
                                                          configLoadButton_->Render(),
                                                      }),
-                                                     ftxui::vbox({ftxui::paragraphAlignLeft(configStatus_)})})}),
+                                                     ftxui::vbox({ftxui::paragraphAlignLeft(configStatus_),
+                                                                  ftxui::filler(), configResetButton_->Render()})})}),
                            ftxui::separator(), connectButton_->Render() | ftxui::flex}));
         }
         else // if already connected
