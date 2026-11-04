@@ -17,6 +17,8 @@ include(FetchContent)
 set(FETCHCONTENT_UPDATES_DISCONNECTED ON)
 set(FETCHCONTENT_QUIET OFF)
 
+find_package(ftxui REQUIRED)
+if(NOT ftxui_FOUND)
 FetchContent_Declare(ftxui
   GIT_REPOSITORY https://github.com/arthursonzogni/ftxui.git
   GIT_TAG        v7.0.0 # branch name like main is also possible
@@ -25,8 +27,12 @@ FetchContent_Declare(ftxui
   EXCLUDE_FROM_ALL
 )
 FetchContent_MakeAvailable(ftxui)
+endif()
 
 # easy enum conversion into strings
+# Try to find system version of magic_enum
+find_package(magic_enum QUIET)
+if(NOT magic_enum_FOUND)
 FetchContent_Declare(magic_enum
   GIT_REPOSITORY https://github.com/Neargye/magic_enum.git
   GIT_TAG        v0.9.8
@@ -35,7 +41,11 @@ FetchContent_Declare(magic_enum
   EXCLUDE_FROM_ALL
 )
 FetchContent_MakeAvailable(magic_enum)
+endif()
 
+# Try to find system version of fmt
+find_package(fmt QUIET)
+if(NOT fmt_FOUND)
 FetchContent_Declare(
   fmt
   GIT_REPOSITORY https://github.com/fmtlib/fmt.git
@@ -45,7 +55,11 @@ FetchContent_Declare(
   EXCLUDE_FROM_ALL
 )
 FetchContent_MakeAvailable(fmt)
+endif()
 
+# Try to find system version of spdlog
+find_package(spdlog QUIET)
+if(NOT spdlog_FOUND)
 # Avoid spdlog using the bundled fmt version, it can cause issues when linking with a controller lib that already has another version
 set(SPDLOG_FMT_EXTERNAL ON CACHE BOOL "Use external fmt library" FORCE)
 
@@ -58,7 +72,11 @@ FetchContent_Declare(
   EXCLUDE_FROM_ALL
 )
 FetchContent_MakeAvailable(spdlog)
+endif()
 
+# Try to find system version of c-periphery
+find_package(periphery QUIET)
+if(NOT periphery_FOUND)
 FetchContent_Declare(
   c-periphery
   GIT_REPOSITORY https://github.com/vsergeev/c-periphery.git
@@ -68,7 +86,11 @@ FetchContent_Declare(
   EXCLUDE_FROM_ALL
 )
 FetchContent_MakeAvailable(c-periphery)
+endif()
 
+# Try to find system version of yaml-cpp
+find_package(yaml-cpp QUIET)
+if(NOT yaml-cpp_FOUND)
 FetchContent_Declare(
   yaml-cpp
   GIT_REPOSITORY https://github.com/jbeder/yaml-cpp.git
@@ -78,6 +100,7 @@ FetchContent_Declare(
   EXCLUDE_FROM_ALL
 )
 FetchContent_MakeAvailable(yaml-cpp)
+endif()
 
 
 # Hardware related things, servos etc
@@ -89,7 +112,7 @@ add_library(Hardware
 target_include_directories(Hardware PUBLIC
                            include/hardware/)
 target_link_libraries(Hardware PUBLIC
-                      periphery)
+                      periphery::periphery)
 
 # Controller to compute commands and take sensor data
 add_library(Controller

@@ -1,6 +1,7 @@
 #include "servos/feetech/feetech.h"
 
 // for M_PI
+#include <algorithm> // IWYU pragma: keep
 #include <math.h>
 
 FeetechServos::FeetechServos()
