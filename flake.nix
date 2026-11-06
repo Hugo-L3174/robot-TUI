@@ -53,6 +53,7 @@
 
               cmakeFlags = [
                 "-GNinja"
+                (lib.cmakeBool "ROBOT_TUI_FORCE_FETCHCONTENT" false)
               ];
 
               doCheck = true;
