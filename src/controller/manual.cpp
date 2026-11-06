@@ -5,7 +5,7 @@ ManualController::ManualController() {}
 bool ManualController::runControl(std::mutex & stateMutex,
                                   const std::vector<ServoInfo> & states,
                                   std::mutex & commandMutex,
-                                  std::vector<ServoInfo> & commands)
+                                  std::vector<ServoTarget> & commands)
 {
   return true;
 }

@@ -18,7 +18,7 @@ ExternalController::ExternalController(const ExternalControllerConfig & config, 
 bool ExternalController::runControl(std::mutex & stateMutex,
                                     const std::vector<ServoInfo> & states,
                                     std::mutex & commandMutex,
-                                    std::vector<ServoInfo> & commands)
+                                    std::vector<ServoTarget> & commands)
 {
   bool ret = true;
   // @todo instead of hardcoding udp make an external connection pointer

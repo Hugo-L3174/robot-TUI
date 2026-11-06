@@ -67,8 +67,8 @@ ServoInfo FeetechServos::getServoData(const int & id)
   servoData.temperature = sms_sts_serial_->read_temperature(id);
   servoData.torqueEnabled = sms_sts_serial_->read_torque_state(id);
 
-  servoData.servoGains.kp = sms_sts_serial_->read_pgain(id);
-  servoData.servoGains.kd = sms_sts_serial_->read_dgain(id);
+  servoData.servoTargets.kp = sms_sts_serial_->read_pgain(id);
+  servoData.servoTargets.kd = sms_sts_serial_->read_dgain(id);
 
   // same logic as for measured values
   servoData.servoTargets.pos = ((sms_sts_serial_->read_pos_goal(id) * 2 * M_PI) / 4096) - M_PI;
@@ -115,13 +115,13 @@ int FeetechServos::velTargetToServo(const double & velTarget)
   return speed;
 }
 
-bool FeetechServos::setServoTarget(const int & id, const ServoInfo::targets & target)
+bool FeetechServos::setServoTarget(const int & id, const ServoTarget & target)
 {
   // no feedforward acceleration on sts3215, using 0 to deactivate hardware acceleration ramp
   return sms_sts_serial_->write_pos_ex(id, posTargetToServo(target.pos), velTargetToServo(target.vel));
 }
 
-bool FeetechServos::setServoTargets(const std::vector<int> & ids, std::vector<ServoInfo::targets> targets)
+bool FeetechServos::setServoTargets(const std::vector<int> & ids, std::vector<ServoTarget> targets)
 {
   // convert to expected uint8_t format
   std::vector<uint8_t> servoIds;

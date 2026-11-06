@@ -58,7 +58,7 @@ inline std::vector<std::uint8_t> encode(ServoPacketKind kind, const std::vector<
 // Decode a received packet into a vector of data
 inline bool decode(const std::vector<std::uint8_t> & packet,
                    ServoPacketKind expectedKind,
-                   std::vector<ServoInfo> & servosData)
+                   std::vector<ServoTarget> & servoCommands)
 {
   if(packet.size() < headerSize) return false;
 
@@ -71,13 +71,13 @@ inline bool decode(const std::vector<std::uint8_t> & packet,
   if(packet.size() != expectedSize) return false;
 
   // Create output vector with size info from header
-  std::vector<ServoInfo> decoded(header.recordCount);
+  std::vector<ServoTarget> decoded(header.recordCount);
   if(!decoded.empty())
   {
     // Get packet payload
     std::memcpy(decoded.data(), packet.data() + headerSize, decoded.size() * recordSize);
   }
-  servosData = std::move(decoded);
+  servoCommands = std::move(decoded);
   return true;
 }
 } // namespace servo_packet

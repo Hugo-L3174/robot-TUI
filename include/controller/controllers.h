@@ -28,7 +28,7 @@ public:
   virtual bool runControl(std::mutex & stateMutex,
                           const std::vector<ServoInfo> & states,
                           std::mutex & commandMutex,
-                          std::vector<ServoInfo> & commands) = 0;
+                          std::vector<ServoTarget> & commands) = 0;
   virtual bool startControl() = 0;
   virtual bool stopControl() = 0;
   // Controller timestep in seconds

@@ -89,7 +89,7 @@ bool UDPServer::running() const
   return socket_ >= 0;
 }
 
-bool UDPServer::receiveCommands(std::vector<ServoInfo> & commands)
+bool UDPServer::receiveCommands(std::vector<ServoTarget> & commands)
 {
   if(socket_ < 0) return false;
   sockaddr_in peer{};
@@ -101,7 +101,7 @@ bool UDPServer::receiveCommands(std::vector<ServoInfo> & commands)
   if(size < 0) return false;
   packet.resize(static_cast<std::size_t>(size));
 
-  std::vector<ServoInfo> decoded;
+  std::vector<ServoTarget> decoded;
   // Decode received packet into expected commands format
   if(!servo_packet::decode(packet, ServoPacketKind::Commands, decoded)) return false;
   peerAddress_.resize(sizeof(peer));

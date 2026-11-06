@@ -13,7 +13,7 @@ bool SimulatedServos::openLink(const std::string & device)
   for(int i = 1; i < 7; i++)
   {
     // Only initializing non default arguments
-    ServoInfo dummy{.id = i, .voltage = 7.8, .temperature = 30., .servoGains = {.kp = 10., .kd = 6.32}};
+    ServoInfo dummy{.id = i, .voltage = 7.8, .temperature = 30., .servoTargets = {.kp = 10., .kd = 6.32}};
     dummyServos_.emplace(i, dummy);
   }
   startServoUpdateThread();
@@ -59,7 +59,7 @@ void SimulatedServos::simulateDummyServoUpdate(ServoInfo & dummyData)
   auto posError = dummyData.servoTargets.pos - dummyData.position;
   auto velError = dummyData.servoTargets.vel - dummyData.velocity;
   auto commandAcc =
-      dummyData.servoTargets.acc + dummyData.servoGains.kp * posError + dummyData.servoGains.kd * velError;
+      dummyData.servoTargets.torque + dummyData.servoTargets.kp * posError + dummyData.servoTargets.kd * velError;
 
   // simulating motion only if simulated servo on
   if(dummyData.torqueEnabled)
@@ -124,15 +124,15 @@ bool SimulatedServos::setServoGains(const int & id, const double & P, const doub
   std::lock_guard<std::mutex> lock(servoDataMutex_);
   if(dummyServos_.contains(id))
   {
-    dummyServos_.at(id).servoGains.kp = P;
-    dummyServos_.at(id).servoGains.kd = D;
-    dummyServos_.at(id).servoGains.ki = I;
+    dummyServos_.at(id).servoTargets.kp = P;
+    dummyServos_.at(id).servoTargets.kd = D;
+    dummyServos_.at(id).servoTargets.ki = I;
     return true;
   }
   return false;
 }
 
-bool SimulatedServos::setServoTarget(const int & id, const ServoInfo::targets & target)
+bool SimulatedServos::setServoTarget(const int & id, const ServoTarget & target)
 {
   std::lock_guard<std::mutex> lock(servoDataMutex_);
   if(dummyServos_.contains(id))
@@ -143,7 +143,7 @@ bool SimulatedServos::setServoTarget(const int & id, const ServoInfo::targets & 
   return false;
 }
 
-bool SimulatedServos::setServoTargets(const std::vector<int> & ids, std::vector<ServoInfo::targets> targets)
+bool SimulatedServos::setServoTargets(const std::vector<int> & ids, std::vector<ServoTarget> targets)
 {
   std::lock_guard<std::mutex> lock(servoDataMutex_);
   for(size_t i = 0; i < ids.size(); i++)

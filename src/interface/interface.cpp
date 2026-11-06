@@ -31,9 +31,12 @@ void Interface::connect(const MotorType motorType, const std::string & device)
       {
         // First initialization calls hardware directly
         motorStates_.emplace_back(servoHardware_->getServoData(id));
-        controllerCommands_.emplace_back(motorStates_.back());
-        // Set first target to current position
-        controllerCommands_.back().servoTargets.pos = motorStates_.back().position;
+        auto newTarget = ServoTarget{.id = id,
+                                     .kp = motorStates_.back().servoTargets.kp,
+                                     .kd = motorStates_.back().servoTargets.kd,
+                                     .ki = motorStates_.back().servoTargets.ki,
+                                     .pos = motorStates_.back().servoTargets.pos};
+        controllerCommands_.emplace_back(newTarget);
       }
     }
 
@@ -63,14 +66,12 @@ void Interface::connect(const MotorType motorType, const std::string & device)
               // @fixme make a better data type for targets
               std::lock_guard<std::mutex> commandsLock(commandsMutex_);
               std::vector<int> ids;
-              std::vector<ServoInfo::targets> targets;
               for(const auto & command : controllerCommands_)
               {
                 ids.emplace_back(command.id);
-                targets.emplace_back(command.servoTargets);
               }
               // @fixme add hardware mutex lock just in case
-              servoHardware_->setServoTargets(ids, targets);
+              servoHardware_->setServoTargets(ids, controllerCommands_);
             }
 
             auto end = std::chrono::high_resolution_clock::now();
@@ -236,14 +237,16 @@ void Interface::getServoData(std::vector<ServoInfo> & dataBuffer)
   dataBuffer = motorStates_;
 }
 
-void Interface::setServoTarget(int id, double targetPos, double targetVel, double targetAcc)
+void Interface::setServoTarget(int id, double targetPos, double targetVel, double ffTorque)
 {
   std::lock_guard<std::mutex> commandsLock(commandsMutex_);
   for(auto & command : controllerCommands_)
   {
     if(id == command.id)
     {
-      command.servoTargets = ServoInfo::targets{.pos = targetPos, .vel = targetVel, .acc = targetAcc};
+      command.pos = targetPos;
+      command.vel = targetVel;
+      command.torque = ffTorque;
       break;
     }
   }
@@ -251,26 +254,26 @@ void Interface::setServoTarget(int id, double targetPos, double targetVel, doubl
 
 void Interface::setServoTargets(const std::vector<int> & ids, const std::vector<double> & targetsPos)
 {
-  // If no target vel or acc passed, target zero
+  // If no target vel or torque passed, target zero
   // @fixme should we really target zero ? ok for acceleration but check hardware implementations of zero vel.
   // might make incoherent objective
-  std::vector<double> targetsVel(ids.size()), targetsAcc(ids.size());
-  return setServoTargets(ids, targetsPos, targetsVel, targetsAcc);
+  std::vector<double> targetsVel(ids.size()), ffTorques(ids.size());
+  return setServoTargets(ids, targetsPos, targetsVel, ffTorques);
 }
 
 void Interface::setServoTargets(const std::vector<int> & ids,
                                 const std::vector<double> & targetsPos,
                                 const std::vector<double> & targetsVel)
 {
-  // If no target acc passed, target zero
-  std::vector<double> targetsAcc(ids.size());
-  return setServoTargets(ids, targetsPos, targetsVel, targetsAcc);
+  // If no target torque passed, target zero
+  std::vector<double> ffTorques(ids.size());
+  return setServoTargets(ids, targetsPos, targetsVel, ffTorques);
 }
 
 void Interface::setServoTargets(const std::vector<int> & ids,
                                 const std::vector<double> & targetsPos,
                                 const std::vector<double> & targetsVel,
-                                const std::vector<double> & targetsAcc)
+                                const std::vector<double> & ffTorques)
 {
   std::lock_guard<std::mutex> commandsLock(commandsMutex_);
   for(size_t i = 0; i < ids.size(); i++)
@@ -279,7 +282,9 @@ void Interface::setServoTargets(const std::vector<int> & ids,
     {
       if(ids[i] == command.id)
       {
-        command.servoTargets = ServoInfo::targets{.pos = targetsPos[i], .vel = targetsVel[i], .acc = targetsAcc[i]};
+        command.pos = targetsPos[i];
+        command.vel = targetsVel[i];
+        command.torque = ffTorques[i];
         // break out of the commands for when found
         break;
       }
@@ -294,7 +299,9 @@ void Interface::setServoGains(int id, double P, double D, double I)
   {
     if(id == command.id)
     {
-      command.servoGains = ServoInfo::gains{.kp = P, .kd = D, .ki = I};
+      command.kp = P;
+      command.kd = D;
+      command.ki = I;
       break;
     }
   }

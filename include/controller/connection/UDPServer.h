@@ -20,8 +20,8 @@ public:
   bool stop();
   bool running() const;
 
-  // Receive data sent by client, decode it and put it in commands buffer
-  bool receiveCommands(std::vector<ServoInfo> & commands);
+  // Receive commands sent by client, decode it and put it in commands buffer
+  bool receiveCommands(std::vector<ServoTarget> & commands);
   // Send state data to last connected client
   bool sendStates(const std::vector<ServoInfo> & states);
 

@@ -60,7 +60,7 @@ bool MCController::stopControl()
 bool MCController::runControl(std::mutex & stateMutex,
                               const std::vector<ServoInfo> & states,
                               std::mutex & commandMutex,
-                              std::vector<ServoInfo> & commands)
+                              std::vector<ServoTarget> & commands)
 {
   if(!controller_)
   {
@@ -123,15 +123,19 @@ bool MCController::runControl(std::mutex & stateMutex,
 
     const auto & q = robot.mbc().q;
     const auto & alpha = robot.mbc().alpha;
+    const auto & tauOut = robot.mbc().jointTorque;
     std::vector<double> targetPositions;
     std::vector<double> targetVelocities;
+    std::vector<double> ffTorques;
     targetPositions.reserve(jointOrder.size());
     targetVelocities.reserve(jointOrder.size());
+    ffTorques.reserve(jointOrder.size());
     for(const auto & joint : jointOrder)
     {
       const auto jointId = robot.jointIndexByName(joint);
       targetPositions.push_back(q.at(jointId).at(0));
       targetVelocities.push_back(alpha.at(jointId).at(0));
+      ffTorques.push_back(tauOut.at(jointId).at(0));
     }
 
     {
@@ -147,8 +151,9 @@ bool MCController::runControl(std::mutex & stateMutex,
       }
       for(std::size_t i = 0; i < commands.size(); ++i)
       {
-        commands[i].servoTargets.pos = targetPositions[i];
-        commands[i].servoTargets.vel = targetVelocities[i];
+        commands[i].pos = targetPositions[i];
+        commands[i].vel = targetVelocities[i];
+        commands[i].torque = ffTorques[i];
       }
     }
     return true;

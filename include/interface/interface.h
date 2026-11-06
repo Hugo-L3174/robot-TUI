@@ -85,7 +85,7 @@ public:
                        const ControllerConfig & config = ControllerConfig{},
                        std::shared_ptr<spdlog::logger> logger = {});
 
-  void setServoTarget(int id, double targetPos, double targetVel = 0., double targetAcc = 0.);
+  void setServoTarget(int id, double targetPos, double targetVel = 0., double ffTorque = 0.);
   void setServoTargets(const std::vector<int> & ids, const std::vector<double> & targetsPos);
   void setServoTargets(const std::vector<int> & ids,
                        const std::vector<double> & targetsPos,
@@ -93,7 +93,7 @@ public:
   void setServoTargets(const std::vector<int> & ids,
                        const std::vector<double> & targetsPos,
                        const std::vector<double> & targetsVel,
-                       const std::vector<double> & targetsAcc);
+                       const std::vector<double> & ffTorques);
   // @todo add another setServo that takes a vector of commands directly
 
   void setServoGains(int id, double P, double D, double I);
@@ -134,8 +134,9 @@ private:
   std::unique_ptr<ServoHardware> servoHardware_;
   std::unique_ptr<ControllerInterface> controller_;
 
+  // @fixme use unordered maps instead ?
   // Servo commands vector, updated by the controller and sent to the hardware
-  std::vector<ServoInfo> controllerCommands_;
+  std::vector<ServoTarget> controllerCommands_;
   // Servo states vector, updated by the hardware and sent as feedback to the controller
   std::vector<ServoInfo> motorStates_;
   // Thread protection for commands and states

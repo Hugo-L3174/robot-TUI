@@ -20,8 +20,8 @@ public:
   ServoInfo getServoData(const int & id) override;
   bool servoOn(const int & id, const bool & activate) override;
   bool setServoGains(const int & id, const double & P, const double & D, const double & I) override;
-  bool setServoTarget(const int & id, const ServoInfo::targets & target) override;
-  bool setServoTargets(const std::vector<int> & ids, std::vector<ServoInfo::targets> targets) override;
+  bool setServoTarget(const int & id, const ServoTarget & target) override;
+  bool setServoTargets(const std::vector<int> & ids, std::vector<ServoTarget> targets) override;
 
 private:
   // Random generator for noise

@@ -25,7 +25,7 @@ public:
   bool runControl(std::mutex & stateMutex,
                   const std::vector<ServoInfo> & states,
                   std::mutex & commandMutex,
-                  std::vector<ServoInfo> & commands) override;
+                  std::vector<ServoTarget> & commands) override;
   bool startControl() override;
   bool stopControl() override;
 
