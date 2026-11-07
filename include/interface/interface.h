@@ -33,7 +33,8 @@ struct RobotConfig
 {
   std::string name;
   int actuatedJointsNb;
-  std::map<std::string, ServoConfig> actuators;
+  // map key is the servo id
+  std::map<int, ServoConfig> actuators;
 };
 
 class Interface
@@ -147,6 +148,8 @@ private:
   std::jthread hardwareThread_;
   // Bool flag to send or not commands in the hardware thread
   std::atomic<bool> commanding_;
+  // Flag for emergency damping in case of limit break (hardware thread)
+  std::atomic<bool> emergency_;
 
   // Thread running the controller specific control function at the specified frequency
   std::jthread controllerThread_;

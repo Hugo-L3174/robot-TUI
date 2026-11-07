@@ -64,12 +64,14 @@ void SimulatedServos::simulateDummyServoUpdate(ServoInfo & dummyData)
   // simulating motion only if simulated servo on
   if(dummyData.torqueEnabled)
   {
+    dummyData.torque = dummyData.servoTargets.torque;
     dummyData.velocity += commandAcc * 0.01;
     dummyData.position += dummyData.velocity * 0.01; // semi implicit euler
   }
   else
   {
     dummyData.velocity = 0.;
+    dummyData.torque = 0.;
   }
 }
 

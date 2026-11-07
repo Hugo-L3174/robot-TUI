@@ -85,7 +85,6 @@ void ControllerPanel::createController(ControllerType type)
       sliderVals_.reserve(interface_.getServoIds().size());
       // separate index to keep track of place in the sliderVals_ vector
       size_t index = 0;
-      // std::lock_guard<std::mutex> lock(servoMapMutex_);
       for(const auto & servoData : interface_.getServoData())
       {
         sliderVals_.emplace_back(servoData.position);
@@ -96,6 +95,17 @@ void ControllerPanel::createController(ControllerType type)
         // @todo make it generic by just setting from 0 - 1 and then scale it correctly in the manual controller
         option.min = -M_PI + 2. * M_PI / 4096;
         option.max = M_PI - 2. * M_PI / 4096;
+        // overwrite min and max values with configured min and max if existing
+        if(interface_.robotConfig().has_value())
+        {
+          auto it = interface_.robotConfig().value().actuators.find(servoData.id);
+          if(it != interface_.robotConfig().value().actuators.end())
+          {
+            const auto & servoConfig = it->second;
+            option.min = servoConfig.jointLowerLimit;
+            option.max = servoConfig.jointUpperLimit;
+          }
+        }
         option.increment = 2. * M_PI / 4096;
         // For the manual controller we don't need to actually implement a controller, just trigger a hardware command
         // update when the sliders are updated.

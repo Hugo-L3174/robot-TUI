@@ -214,7 +214,7 @@ void ConnectionPanel::loadSelectedRobotConfig()
         throw std::runtime_error("invalid limits for servo: " + jointName);
       }
 
-      config.actuators.emplace(jointName, std::move(actuator));
+      config.actuators.emplace(actuator.servoId, std::move(actuator));
       config.actuatedJointsNb++;
     }
 

@@ -3,7 +3,7 @@
 #include <filesystem>
 #include <ranges>
 
-Interface::Interface() : connected_(false), hardwareTimestep_(0.005), commanding_(false) {}
+Interface::Interface() : connected_(false), hardwareTimestep_(0.005), commanding_(false), emergency_(false) {}
 
 void Interface::connect(const MotorType motorType, const std::string & device)
 {
@@ -57,13 +57,40 @@ void Interface::connect(const MotorType motorType, const std::string & device)
               for(auto & data : motorStates_)
               {
                 data = servoHardware_->getServoData(data.id);
+                // Safety check if a config is loaded
+                if(robotConfig_.has_value())
+                {
+                  auto it = robotConfig_.value().actuators.find(data.id);
+                  if(it != robotConfig_.value().actuators.end())
+                  {
+                    const auto & servoConfig = it->second;
+                    // the loaded config holds this servo, check if limits are ok
+                    if(data.position < servoConfig.jointLowerLimit || data.position > servoConfig.jointUpperLimit
+                       || std::abs(data.torque) > servoConfig.effortLimit)
+                    {
+                      // limit breached, raise flag
+                      emergency_ = true;
+                    }
+                  }
+                }
               }
             }
 
-            if(commanding_)
+            // Emergency flag is raised, target zero for the servos in config
+            if(emergency_)
+            {
+              // @todo make a batch servo gains function or put it in setServoTarget
+              // set all gains and ff to zero
+              for(const auto & [id, _] : robotConfig_->actuators)
+              {
+                servoHardware_->setServoGains(id, 0, 0, 0);
+                auto zeroTarget = ServoTarget{.id = id};
+                servoHardware_->setServoTarget(id, zeroTarget);
+              }
+            }
+            else if(commanding_)
             {
               // Send commands to hardware
-              // @fixme make a better data type for targets
               std::lock_guard<std::mutex> commandsLock(commandsMutex_);
               std::vector<int> ids;
               for(const auto & command : controllerCommands_)
