@@ -56,8 +56,11 @@ public:
   {
     return connected_;
   }
-  // @todo inline to return if the control thread is running
-  bool controllerRunning() const;
+  // True only if a controller has started and its thread is running
+  bool controllerRunning() const
+  {
+    return controllerRunning_;
+  }
 
   void detectSerialPorts();
   const std::vector<std::string> & getSerialPorts() const
@@ -157,6 +160,8 @@ private:
 
   // Thread running the controller specific control function at the specified frequency
   std::jthread controllerThread_;
+  // True only if a controller has started and its thread is running
+  std::atomic<bool> controllerRunning_;
 
   // To be detected at construction
   // May need to be more specific than just the names

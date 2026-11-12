@@ -5,7 +5,8 @@
 #include <ranges>
 
 Interface::Interface()
-: connected_(false), hardwareTimestep_(0.005), commanding_(false), emergency_(false), initRequested_(false)
+: connected_(false), hardwareTimestep_(0.005), commanding_(false), emergency_(false), initRequested_(false),
+  controllerRunning_(false)
 {
 }
 
@@ -213,7 +214,7 @@ void Interface::disconnect()
 
 void Interface::startController()
 {
-  if(controller_)
+  if(controller_ && !controllerThread_.joinable())
   {
     // Start controller thread
     controllerThread_ = std::jthread(
@@ -221,6 +222,7 @@ void Interface::startController()
         {
           if(controller_->startControl())
           {
+            controllerRunning_ = true;
             while(!stopToken.stop_requested())
             {
               auto start = std::chrono::steady_clock::now();
@@ -234,6 +236,8 @@ void Interface::startController()
               }
             }
           }
+          // if startControl failed reset to false
+          controllerRunning_ = false;
         });
   }
 }
@@ -249,6 +253,7 @@ void Interface::stopController()
       controllerThread_.request_stop();
       controllerThread_.join();
     }
+    controllerRunning_ = false;
     controller_->stopControl();
   }
 }

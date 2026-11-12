@@ -100,8 +100,12 @@ void ConnectionPanel::buildContainer()
                                     }
                                   })
                     | ftxui::Maybe([&] { return interface_.connected(); });
-  initPoseButton_ = ftxui::Button("Go to initial pose", [&] { interface_.startInitSequence(); })
-                    | ftxui::Maybe([&] { return interface_.connected() && interface_.robotConfig().has_value(); });
+  initPoseButton_ =
+      ftxui::Button("Go to initial pose", [&] { interface_.startInitSequence(); })
+      | ftxui::Maybe(
+          [&] {
+            return interface_.connected() && interface_.robotConfig().has_value() && !interface_.controllerRunning();
+          });
 
   // Initialize the container empty then call the update function
   panelContainer_ = ftxui::Container::Horizontal({});
