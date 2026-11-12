@@ -1,9 +1,13 @@
 #include "interface.h"
 
+#include <algorithm>
 #include <filesystem>
 #include <ranges>
 
-Interface::Interface() : connected_(false), hardwareTimestep_(0.005), commanding_(false), emergency_(false) {}
+Interface::Interface()
+: connected_(false), hardwareTimestep_(0.005), commanding_(false), emergency_(false), initRequested_(false)
+{
+}
 
 void Interface::connect(const MotorType motorType, const std::string & device)
 {
@@ -47,6 +51,16 @@ void Interface::connect(const MotorType motorType, const std::string & device)
     hardwareThread_ = std::jthread(
         [&](std::stop_token stopToken)
         {
+          // Interpolation structures for init
+          constexpr double initDuration = 2.0;
+          struct InitTarget
+          {
+            ServoTarget target;
+            double startPosition;
+          };
+          std::vector<InitTarget> initTargets;
+          double initTimeRemaining = 0.0;
+
           while(!stopToken.stop_requested())
           {
             auto start = std::chrono::high_resolution_clock::now();
@@ -76,6 +90,34 @@ void Interface::connect(const MotorType motorType, const std::string & device)
               }
             }
 
+            // If the init flag was triggered, clear it and build initialization targets from loaded config
+            if(initRequested_.exchange(false) && robotConfig_.has_value())
+            {
+              initTargets.clear();
+              std::lock_guard<std::mutex> statesLock(statesMutex_);
+              std::lock_guard<std::mutex> commandsLock(commandsMutex_);
+              for(const auto & [id, config] : robotConfig_->actuators)
+              {
+                const auto state = std::ranges::find(motorStates_, id, &ServoInfo::id);
+                const auto command = std::ranges::find(controllerCommands_, id, &ServoTarget::id);
+                if(state != motorStates_.end() && command != controllerCommands_.end())
+                {
+                  // initialize structures with config init pose and gains, and current pose (for interpolation)
+                  // clang-format off
+                  initTargets.push_back({ServoTarget{.id = id,
+                                                     .kp = command->kp,
+                                                     .kd = command->kd,
+                                                     .ki = command->ki,
+                                                     .pos = config.qInit},
+                                         state->position});
+                  // clang-format on
+                  // Turn on corresponding servo
+                  servoHardware_->servoOn(id, true);
+                }
+              }
+              initTimeRemaining = initTargets.empty() ? 0.0 : initDuration;
+            }
+
             // Emergency flag is raised, target zero for the servos in config
             if(emergency_)
             {
@@ -86,6 +128,38 @@ void Interface::connect(const MotorType motorType, const std::string & device)
                 servoHardware_->setServoGains(id, 0, 0, 0);
                 auto zeroTarget = ServoTarget{.id = id};
                 servoHardware_->setServoTarget(id, zeroTarget);
+              }
+            }
+            else if(initTimeRemaining > 0.0)
+            {
+              // interpolation ratio
+              const double ratio = std::clamp((initDuration - initTimeRemaining) / initDuration, 0.0, 1.0);
+              std::vector<int> ids;
+              std::vector<ServoTarget> interpolatedTargets;
+              for(const auto & initTarget : initTargets)
+              {
+                const auto & target = initTarget.target;
+                auto interpolated = target;
+                interpolated.pos = initTarget.startPosition + (target.pos - initTarget.startPosition) * ratio;
+                // @fixme move gains targets into batch function with the targets
+                servoHardware_->setServoGains(target.id, target.kp, target.kd, target.ki);
+                ids.push_back(target.id);
+                interpolatedTargets.push_back(interpolated);
+              }
+              servoHardware_->setServoTargets(ids, interpolatedTargets);
+              initTimeRemaining = std::max(0.0, initTimeRemaining - hardwareTimestep_);
+
+              if(initTimeRemaining == 0.0)
+              {
+                std::lock_guard<std::mutex> commandsLock(commandsMutex_);
+                for(const auto & startup : initTargets)
+                {
+                  const auto command = std::ranges::find(controllerCommands_, startup.target.id, &ServoTarget::id);
+                  if(command != controllerCommands_.end())
+                  {
+                    *command = startup.target;
+                  }
+                }
               }
             }
             else if(commanding_)
@@ -113,9 +187,20 @@ void Interface::connect(const MotorType motorType, const std::string & device)
   }
 }
 
+bool Interface::startInitSequence()
+{
+  if(!connected_ || !robotConfig_.has_value() || emergency_)
+  {
+    return false;
+  }
+  initRequested_ = true;
+  return true;
+}
+
 void Interface::disconnect()
 {
   commanding_ = false;
+  initRequested_ = false;
   if(hardwareThread_.joinable())
   {
     // Set the jthread stop token

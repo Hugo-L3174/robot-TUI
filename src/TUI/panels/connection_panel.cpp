@@ -100,6 +100,8 @@ void ConnectionPanel::buildContainer()
                                     }
                                   })
                     | ftxui::Maybe([&] { return interface_.connected(); });
+  initPoseButton_ = ftxui::Button("Go to initial pose", [&] { interface_.startInitSequence(); })
+                    | ftxui::Maybe([&] { return interface_.connected() && interface_.robotConfig().has_value(); });
 
   // Initialize the container empty then call the update function
   panelContainer_ = ftxui::Container::Horizontal({});
@@ -116,6 +118,7 @@ void ConnectionPanel::updatePanelControls(bool connected)
     panelContainer_->Add(disconnectButton_);
     panelContainer_->Add(servoOnButton_);
     panelContainer_->Add(servoOffButton_);
+    panelContainer_->Add(initPoseButton_);
     panelContainer_->SetActiveChild(disconnectButton_);
   }
   else
@@ -301,7 +304,8 @@ void ConnectionPanel::buildRenderer()
                        ftxui::separator(),
                        disconnectButton_->Render() | ftxui::flex,
                    }),
-                   ftxui::separator(), servoOnButton_->Render(), ftxui::separator(), servoOffButton_->Render()}));
+                   ftxui::separator(), servoOnButton_->Render(), ftxui::separator(), servoOffButton_->Render(),
+                   ftxui::separator(), initPoseButton_->Render()}));
         }
       });
 }

@@ -44,6 +44,7 @@ private:
   ftxui::Component disconnectButton_;
   ftxui::Component servoOnButton_;
   ftxui::Component servoOffButton_;
+  ftxui::Component initPoseButton_;
   ftxui::Component configLoader_;
   ftxui::Component configLoadButton_;
   ftxui::Component configResetButton_;

@@ -46,6 +46,8 @@ public:
   void connect(const MotorType motorType, const std::string & device);
   // Should clear servos_ and set connected_ to false
   void disconnect();
+  // Request transition to a loaded config's initial servo poses
+  bool startInitSequence();
 
   void startController();
   void stopController();
@@ -150,6 +152,8 @@ private:
   std::atomic<bool> commanding_;
   // Flag for emergency damping in case of limit break (hardware thread)
   std::atomic<bool> emergency_;
+  // Flag to transition to a loaded config initial pose
+  std::atomic<bool> initRequested_;
 
   // Thread running the controller specific control function at the specified frequency
   std::jthread controllerThread_;
