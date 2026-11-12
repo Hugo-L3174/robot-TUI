@@ -1,6 +1,7 @@
 #include "interface.h"
 
 #include <algorithm>
+#include <chrono>
 #include <filesystem>
 #include <ranges>
 
@@ -64,7 +65,7 @@ void Interface::connect(const MotorType motorType, const std::string & device)
 
           while(!stopToken.stop_requested())
           {
-            auto start = std::chrono::high_resolution_clock::now();
+            auto start = std::chrono::steady_clock::now();
             // Get hardware servo states and update buffer
             {
               // @fixme add hardware mutex lock just in case
@@ -176,12 +177,12 @@ void Interface::connect(const MotorType motorType, const std::string & device)
               servoHardware_->setServoTargets(ids, controllerCommands_);
             }
 
-            auto end = std::chrono::high_resolution_clock::now();
-            double elapsed = std::chrono::duration<double>(end - start).count();
-            if(!elapsed > hardwareTimestep_)
+            auto end = std::chrono::steady_clock::now();
+            double elapsed_microsec = std::chrono::duration<double, std::micro>(end - start).count();
+            if(elapsed_microsec < hardwareTimestep_ * 1000000)
             {
               std::this_thread::sleep_for(
-                  std::chrono::milliseconds(static_cast<unsigned int>(hardwareTimestep_ * 1000 - elapsed)));
+                  std::chrono::microseconds(static_cast<unsigned int>(hardwareTimestep_ * 1000000 - elapsed_microsec)));
             }
           }
         });
@@ -229,7 +230,7 @@ void Interface::startController()
               controller_->runControl(statesMutex_, motorStates_, commandsMutex_, controllerCommands_);
               auto end = std::chrono::steady_clock::now();
               double elapsed_microsec = std::chrono::duration<double, std::micro>(end - start).count();
-              if(!(elapsed_microsec > controller_->timestep() * 1000000))
+              if(elapsed_microsec < controller_->timestep() * 1000000)
               {
                 std::this_thread::sleep_for(std::chrono::microseconds(
                     static_cast<unsigned int>(controller_->timestep() * 1000000 - elapsed_microsec)));
