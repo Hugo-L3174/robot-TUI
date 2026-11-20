@@ -103,7 +103,7 @@ bool UDPServer::receiveCommands(std::vector<ServoTarget> & commands)
 
   std::vector<ServoTarget> decoded;
   // Decode received packet into expected commands format
-  if(!servo_packet::decode(packet, ServoPacketKind::Commands, decoded)) return false;
+  if(!servo_packet::decodeCommand(packet, decoded)) return false;
   peerAddress_.resize(sizeof(peer));
   std::memcpy(peerAddress_.data(), &peer, sizeof(peer));
   commands = std::move(decoded);
@@ -114,7 +114,7 @@ bool UDPServer::sendStates(const std::vector<ServoInfo> & states)
 {
   if(socket_ < 0 || peerAddress_.size() != sizeof(sockaddr_in)) return false;
   // Encode state values into a sendable packet
-  const auto packet = servo_packet::encode(ServoPacketKind::States, states);
+  const auto packet = servo_packet::encodeData(states);
   if(packet.empty() && !states.empty()) return false;
   sockaddr_in peer{};
   std::memcpy(&peer, peerAddress_.data(), sizeof(peer));
