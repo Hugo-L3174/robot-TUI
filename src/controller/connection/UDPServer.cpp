@@ -4,6 +4,7 @@
 #include <cerrno>
 #include <cstring>
 #include <netinet/in.h>
+#include <ranges>
 #include <stdexcept>
 #include <sys/socket.h>
 #include <unistd.h>
@@ -106,7 +107,17 @@ bool UDPServer::receiveCommands(std::vector<ServoTarget> & commands)
   if(!servo_packet::decodeCommand(packet, decoded)) return false;
   peerAddress_.resize(sizeof(peer));
   std::memcpy(peerAddress_.data(), &peer, sizeof(peer));
-  commands = std::move(decoded);
+  // No guarantee that the received command vector holds all commands so just move the existing ones
+  for(auto & newCommand : decoded)
+  {
+    // Use ranges to find the newCommand id in the commands vector (checking against ServoTarget id member)
+    auto it = std::ranges::find(commands, newCommand.id, &ServoTarget::id);
+    // This received command's id is one of the command vector commands, update it
+    if(it != commands.end())
+    {
+      *it = std::move(newCommand);
+    }
+  }
   return true;
 }
 
